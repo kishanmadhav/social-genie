@@ -46,7 +46,11 @@ export default function Dashboard() {
   const [loadingAnalytics, setLoadingAnalytics] = useState(true)
 
   useEffect(() => {
-    if (!loading && !user) {
+    // Don't redirect if we're in the middle of an OAuth callback
+    const params = new URLSearchParams(window.location.search)
+    const isOAuthCallback = params.get('twitter_linked') || params.get('facebook_linked')
+    
+    if (!loading && !user && !isOAuthCallback) {
       router.push('/')
     }
   }, [user, loading, router])
