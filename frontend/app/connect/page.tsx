@@ -199,7 +199,7 @@ export default function Connect() {
               </li>
               <li className="flex items-start">
                 <span className="mr-2">•</span>
-                <span><strong>X (Twitter):</strong> You'll need to authorize SM Genie to post on your behalf</span>
+                <span><strong>X (Twitter):</strong> You'll need to authorize Social Genie to post on your behalf</span>
               </li>
               <li className="flex items-start">
                 <span className="mr-2">•</span>

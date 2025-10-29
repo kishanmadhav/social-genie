@@ -14,7 +14,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <title>SM Genie - Social Media Automation with AI</title>
+        <title>Social Genie - Social Media Automation with AI</title>
         <meta name="description" content="AI-powered social media management that saves time and amplifies your presence" />
       </head>
       <body className={inter.className}>

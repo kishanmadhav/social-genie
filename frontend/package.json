@@ -1,6 +1,6 @@
 {
-  "name": "sm-genie-frontend",
-  "version": "1.0.0",
+  "name": "social-genie-frontend",
+  "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev -p 3001",

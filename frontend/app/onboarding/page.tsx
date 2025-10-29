@@ -123,10 +123,11 @@ export default function Onboarding() {
       <header className="bg-white/80 backdrop-blur-sm shadow-sm sticky top-0 z-10 border-b border-gray-100">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center justify-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-purple-700 rounded-full flex items-center justify-center shadow-sm">
-              <span className="text-white font-bold text-sm">SG</span>
+            <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-purple-700 rounded-xl flex items-center justify-center shadow-lg mb-3">
+              <span className="text-white font-bold text-xl">SG</span>
             </div>
-            <span className="text-xl font-semibold text-gray-900">SM Genie</span>
+            <span className="text-xl font-semibold text-gray-900">Social Genie</span>
+            <span className="text-xs text-gray-500 ml-2">a product by Agentic Genie</span>
           </div>
         </div>
       </header>

@@ -286,7 +286,10 @@ export default function Dashboard() {
               <div className="w-9 h-9 bg-gradient-to-br from-purple-600 to-purple-700 rounded-xl flex items-center justify-center shadow-sm">
                 <span className="text-white font-bold text-sm">SG</span>
               </div>
-              <h1 className="text-xl font-semibold text-gray-900">SM Genie</h1>
+              <div>
+                <h1 className="text-xl font-semibold text-gray-900">Social Genie</h1>
+                <p className="text-xs text-gray-500">a product by Agentic Genie</p>
+              </div>
             </div>
             <div className="flex items-center space-x-3">
               <Link 

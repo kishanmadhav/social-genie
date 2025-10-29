@@ -1,6 +1,8 @@
-# SM Genie Frontend
+# Social Genie Frontend
 
-Modern Next.js frontend for SM Genie social media automation platform.
+Modern Next.js frontend for Social Genie - a product by Agentic Genie.
+
+Social media automation platform with AI-powered content generation.
 
 ## Features
 

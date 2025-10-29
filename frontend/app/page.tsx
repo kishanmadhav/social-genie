@@ -48,7 +48,8 @@ export default function LandingPage() {
               <div className="w-9 h-9 bg-gradient-to-br from-purple-600 to-purple-700 rounded-full flex items-center justify-center group-hover:from-purple-700 group-hover:to-purple-800 transition-all duration-300">
                 <span className="text-white font-bold text-sm">SG</span>
               </div>
-              <span className="text-xl font-semibold text-gray-900">SM Genie</span>
+              <span className="text-xl font-semibold text-gray-900">Social Genie</span>
+              <span className="text-xs text-gray-500 ml-2">a product by Agentic Genie</span>
             </div>
             <div className="flex items-center space-x-6">
               <button 
@@ -179,9 +180,10 @@ export default function LandingPage() {
             <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-purple-700 rounded-full flex items-center justify-center">
               <span className="text-white font-bold text-sm">SG</span>
             </div>
-            <span className="text-lg font-semibold text-gray-900">SM Genie</span>
+            <span className="text-lg font-semibold text-gray-900">Social Genie</span>
+            <span className="text-xs text-gray-400 ml-2">a product by Agentic Genie</span>
           </div>
-          <p className="text-sm text-gray-500 font-light">© {new Date().getFullYear()} SM Genie. All rights reserved.</p>
+          <p className="text-sm text-gray-500 font-light">© {new Date().getFullYear()} Social Genie. All rights reserved.</p>
         </div>
       </footer>
     </div>
