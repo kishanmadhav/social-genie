@@ -1,13 +1,16 @@
 {
-  "name": "twitter-posting-app",
+  "name": "social-genie-api",
   "version": "1.0.0",
-  "description": "Secure Twitter posting application with OAuth authentication",
-  "main": "server.js",
+  "description": "Social Genie - AI-powered social media management API",
+  "main": "index.js",
+  "engines": {
+    "node": ">=18.x"
+  },
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "build": "webpack --mode production",
-    "dev-build": "webpack --mode development"
+    "build": "echo 'No build needed'",
+    "vercel-build": "echo 'No build needed'"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.917.0",

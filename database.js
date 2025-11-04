@@ -2,13 +2,15 @@ const { createClient } = require('@supabase/supabase-js');
 
 // Initialize Supabase client
 const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY; // Use service role for server-side operations
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY; // Use service role for server-side operations
 
 if (!supabaseUrl || !supabaseKey) {
-  throw new Error('Missing Supabase configuration. Please check your environment variables.');
+  console.error('Missing Supabase configuration. Please check your environment variables.');
+  console.error('SUPABASE_URL:', supabaseUrl ? 'SET' : 'MISSING');
+  console.error('SUPABASE_KEY:', supabaseKey ? 'SET' : 'MISSING');
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
 
 // Database operations
 class DatabaseService {

@@ -256,9 +256,28 @@ passport.deserializeUser((user, done) => {
 // Serve static files
 app.use(express.static('public'));
 
+// Health check route
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    env: {
+      hasSupabase: !!(process.env.SUPABASE_URL && process.env.SUPABASE_KEY),
+      hasGoogle: !!process.env.GOOGLE_CLIENT_ID,
+      hasTwitter: !!process.env.TWITTER_API_KEY,
+      hasOpenAI: !!process.env.OPENAI_API_KEY,
+      hasS3: !!process.env.S3_BUCKET_NAME
+    }
+  });
+});
+
 // Routes
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.json({ 
+    message: 'Social Genie API', 
+    version: '1.0.0',
+    endpoints: ['/api/health', '/api/user', '/auth/google']
+  });
 });
 
 // Authentication routes
