@@ -26,11 +26,11 @@ const features = [
   },
 ]
 
-const stats = [
-  { value: "1M+", label: "Posts Generated" },
-  { value: "5K+", label: "Active Users" },
-  { value: "99%", label: "Satisfaction Rate" },
-  { value: "24/7", label: "AI Support" },
+const capabilities = [
+  { value: "3", label: "Social Platforms" },
+  { value: "DALL-E 3", label: "AI Image Model" },
+  { value: "GPT-4", label: "Caption Generator" },
+  { value: "Unlimited", label: "Scheduling" },
 ]
 
 export default function LandingPage() {
@@ -98,17 +98,17 @@ export default function LandingPage() {
             </a>
           </div>
 
-          {/* Trust indicators */}
+          {/* Platform capabilities */}
           <div className="pt-12 border-t border-gray-100">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-12 max-w-4xl mx-auto">
-              {stats.map((stat, index) => (
+              {capabilities.map((capability, index) => (
                 <div 
                   key={index} 
                   className="animate-fade-in-up"
                   style={{ animationDelay: `${600 + index * 100}ms` }}
                 >
-                  <div className="text-4xl font-semibold text-gray-900 mb-1">{stat.value}</div>
-                  <div className="text-sm text-gray-500 font-light">{stat.label}</div>
+                  <div className="text-4xl font-semibold text-gray-900 mb-1">{capability.value}</div>
+                  <div className="text-sm text-gray-500 font-light">{capability.label}</div>
                 </div>
               ))}
             </div>
