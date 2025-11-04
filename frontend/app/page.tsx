@@ -26,11 +26,11 @@ const features = [
   },
 ]
 
-const capabilities = [
-  { value: "3", label: "Social Platforms" },
-  { value: "DALL-E 3", label: "AI Image Model" },
+const platformInfo = [
+  { value: "3", label: "Platforms Supported" },
+  { value: "DALL-E 3", label: "AI Image Engine" },
   { value: "GPT-4", label: "Caption Generator" },
-  { value: "Unlimited", label: "Scheduling" },
+  { value: "AWS S3", label: "Secure Storage" },
 ]
 
 export default function LandingPage() {
@@ -101,14 +101,14 @@ export default function LandingPage() {
           {/* Platform capabilities */}
           <div className="pt-12 border-t border-gray-100">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-12 max-w-4xl mx-auto">
-              {capabilities.map((capability, index) => (
+              {platformInfo.map((info, index) => (
                 <div 
                   key={index} 
                   className="animate-fade-in-up"
                   style={{ animationDelay: `${600 + index * 100}ms` }}
                 >
-                  <div className="text-4xl font-semibold text-gray-900 mb-1">{capability.value}</div>
-                  <div className="text-sm text-gray-500 font-light">{capability.label}</div>
+                  <div className="text-4xl font-semibold text-gray-900 mb-1">{info.value}</div>
+                  <div className="text-sm text-gray-500 font-light">{info.label}</div>
                 </div>
               ))}
             </div>
