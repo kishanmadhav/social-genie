@@ -12,14 +12,6 @@ Social Genie is a comprehensive social media management platform that enables us
 - 📝 **Text Posting** - Post tweets up to 280 characters
 - 🖼️ **Image Upload** - Upload and post images with your content
 - 🎨 **AI Image Generation** - Generate images using DALL-E 3 with GPT-4o-mini captions
-- ☁️ **AWS S3 Storage** - Store generated images permanently in S3
-- 📱 **Responsive Design** - Works on desktop and mobile devices
-- 🔗 **Unified Dashboard** - Manage multiple social accounts in one place
-- 🛡️ **Security Features** - Rate limiting, CSRF protection, secure sessions
-- 📊 **Tweet Analytics** - View likes, retweets, and replies
-- ⚡ **Real-time Updates** - See your recent tweets instantly
-- 🗄️ **Supabase Database** - Secure data storage and management
-- 🔄 **Preview Before Posting** - Review AI-generated content before publishing
 
 ## Authentication Flow (Buffer.com Style)
 
