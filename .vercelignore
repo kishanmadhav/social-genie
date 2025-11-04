@@ -4,5 +4,6 @@ node_modules
 .env.production
 frontend/
 sm-platform/
+public/
 *.log
 .DS_Store

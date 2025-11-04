@@ -265,8 +265,9 @@ passport.deserializeUser((user, done) => {
   done(null, user);
 });
 
-// Serve static files
-app.use(express.static('public'));
+// NOTE: Static files removed - using separate Next.js frontend
+// For local development with old frontend, uncomment:
+// app.use(express.static('public'));
 
 // Health check route
 app.get('/api/health', (req, res) => {
