@@ -20,6 +20,7 @@ const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3001';
 
 // Configure AWS S3 Client
 const s3Client = new S3Client({
@@ -75,8 +76,23 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // CORS configuration - Allow both backend and frontend origins
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  process.env.FRONTEND_URL
+].filter(Boolean); // Remove undefined values
+
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:3001'],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 
@@ -92,7 +108,9 @@ app.use(session({
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Required for cross-origin cookies in production
+    domain: process.env.NODE_ENV === 'production' ? undefined : undefined // Let the browser handle domain
   }
 }));
 
@@ -251,15 +269,15 @@ app.get('/auth/google', passport.authenticate('google', {
 }));
 
 app.get('/auth/google/callback',
-  passport.authenticate('google', { failureRedirect: 'http://localhost:3001/?error=auth_failed' }),
+  passport.authenticate('google', { failureRedirect: `${FRONTEND_URL}/?error=auth_failed` }),
   async (req, res) => {
     // Check if user has completed onboarding (has brand profile)
     const brandProfile = await database.getBrandProfile(req.user.id);
     
     if (brandProfile) {
-      res.redirect('http://localhost:3001/dashboard');
+      res.redirect(`${FRONTEND_URL}/dashboard`);
     } else {
-      res.redirect('http://localhost:3001/onboarding');
+      res.redirect(`${FRONTEND_URL}/onboarding`);
     }
   }
 );
@@ -268,9 +286,9 @@ app.get('/auth/google/callback',
 app.get('/auth/twitter', passport.authenticate('twitter-link'));
 
 app.get('/auth/twitter/callback',
-  passport.authenticate('twitter-link', { failureRedirect: 'http://localhost:3001/connect?error=twitter_auth_failed' }),
+  passport.authenticate('twitter-link', { failureRedirect: `${FRONTEND_URL}/connect?error=twitter_auth_failed` }),
   (req, res) => {
-    res.redirect('http://localhost:3001/connect?twitter_linked=true');
+    res.redirect(`${FRONTEND_URL}/connect?twitter_linked=true`);
   }
 );
 
@@ -282,9 +300,9 @@ app.get('/auth/facebook',
 );
 
 app.get('/auth/facebook/callback',
-  passport.authenticate('facebook-link', { failureRedirect: 'http://localhost:3001/connect?error=facebook_auth_failed' }),
+  passport.authenticate('facebook-link', { failureRedirect: `${FRONTEND_URL}/connect?error=facebook_auth_failed` }),
   (req, res) => {
-    res.redirect('http://localhost:3001/connect?facebook_linked=true');
+    res.redirect(`${FRONTEND_URL}/connect?facebook_linked=true`);
   }
 );
 

@@ -1,0 +1,8 @@
+node_modules
+.env
+.env.local
+.env.production
+frontend/
+sm-platform/
+*.log
+.DS_Store
