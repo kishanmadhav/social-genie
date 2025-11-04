@@ -32,7 +32,7 @@ const s3Client = new S3Client({
 
 // Helper function to upload image to S3
 async function uploadToS3(imageBuffer, contentType = 'image/png') {
-  const fileName = `sm-genie/${crypto.randomBytes(16).toString('hex')}.png`;
+  const fileName = `social-genie/${crypto.randomBytes(16).toString('hex')}.png`;
   
   const command = new PutObjectCommand({
     Bucket: process.env.S3_BUCKET_NAME,

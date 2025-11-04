@@ -1,6 +1,8 @@
-# SM-Genie - Social Media Manager
+# Social Genie - AI-Powered Social Media Management Platform
 
-A secure web application that allows you to manage your social media accounts using Google authentication and post to X (Twitter) and Instagram. Built with Node.js, Express, Supabase, and modern web technologies.
+**A product by Agentic Genie**
+
+Social Genie is a comprehensive social media management platform that enables users to schedule posts, generate AI-powered content, and manage multiple social media accounts from a single dashboard.
 
 ## Features
 
@@ -355,5 +357,6 @@ If you encounter any issues:
 ## Disclaimer
 
 This application is for educational and personal use. Make sure to comply with Twitter's Terms of Service and API usage policies. The developers are not responsible for any misuse of this application.
-#   s o c i a l - g e n i e  
+#   s o c i a l - g e n i e 
+ 
  
