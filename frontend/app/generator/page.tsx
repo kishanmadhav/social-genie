@@ -107,8 +107,7 @@ export default function Generator() {
       await postingAPI.postGenerated({
         platform: selectedPlatform,
         caption: generatedContent.caption,
-        imageUrl: generatedContent.image_url,
-        s3Url: generatedContent.s3_url
+        s3_url: generatedContent.s3_url
       })
       
       setToast({ message: `Posted successfully to ${selectedPlatformData.name}!`, type: 'success' })
