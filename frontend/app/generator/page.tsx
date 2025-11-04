@@ -18,8 +18,8 @@ import {
 interface GeneratedContent {
   prompt: string
   caption: string
-  imageUrl?: string
-  s3Url?: string
+  image_url?: string
+  s3_url?: string
 }
 
 export default function Generator() {
@@ -79,8 +79,8 @@ export default function Generator() {
       setGeneratedContent({
         prompt: prompt,
         caption: result.caption,
-        imageUrl: result.imageUrl,
-        s3Url: result.s3Url
+        image_url: result.image_url,
+        s3_url: result.s3_url
       })
       
       setToast({ message: 'Content generated successfully!', type: 'success' })
@@ -107,8 +107,8 @@ export default function Generator() {
       await postingAPI.postGenerated({
         platform: selectedPlatform,
         caption: generatedContent.caption,
-        imageUrl: generatedContent.imageUrl,
-        s3Url: generatedContent.s3Url
+        imageUrl: generatedContent.image_url,
+        s3Url: generatedContent.s3_url
       })
       
       setToast({ message: `Posted successfully to ${selectedPlatformData.name}!`, type: 'success' })
@@ -266,10 +266,10 @@ export default function Generator() {
                   </div>
 
                   {/* Image Preview */}
-                  {generatedContent.imageUrl && (
+                  {generatedContent.image_url && (
                     <div className="mb-6 rounded-xl overflow-hidden">
                       <img 
-                        src={generatedContent.imageUrl} 
+                        src={generatedContent.image_url} 
                         alt="Generated content" 
                         className="w-full h-auto"
                       />
