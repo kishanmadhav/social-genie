@@ -98,15 +98,31 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Session configuration
+// PostgreSQL session store for Vercel serverless compatibility
+const pgSession = require('connect-pg-simple')(session);
+const { Pool } = require('pg');
+
+// Create PostgreSQL connection pool for sessions
+const sessionPool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+});
+
+// Session configuration with PostgreSQL store
 app.use(session({
+  store: new pgSession({
+    pool: sessionPool,
+    tableName: 'session', // Will auto-create table if it doesn't exist
+    createTableIfMissing: true
+  }),
   secret: process.env.SESSION_SECRET || 'fallback-secret-change-in-production',
   resave: false,
   saveUninitialized: false,
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax' // Required for cross-site OAuth
   }
 }));
 
