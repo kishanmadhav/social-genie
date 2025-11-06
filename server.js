@@ -79,6 +79,8 @@ app.use(cors({
   origin: [
     'http://localhost:3000', 
     'http://localhost:3001',
+    'https://sm-genie-ml8pqgfn1-kishan-madhavs-projects-1f348ecf.vercel.app',
+    'https://sm-genie-3dqfmx1xg-kishan-madhavs-projects-1f348ecf.vercel.app',
     'https://sm-genie-baip7xbmw-kishan-madhavs-projects-1f348ecf.vercel.app',
     'https://sm-genie-cdd2onizk-kishan-madhavs-projects-1f348ecf.vercel.app',
     'https://frontend-7t5u541xf-kishan-madhavs-projects-1f348ecf.vercel.app',
