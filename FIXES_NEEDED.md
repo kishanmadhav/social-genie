@@ -64,6 +64,16 @@ Go to: https://vercel.com/kishan-madhavs-projects-1f348ecf/sm-genie/settings/env
 
 **Edit these variables (manually type or paste - no copy from terminal!):**
 
+0. **DATABASE_URL** (CRITICAL - Required for Twitter OAuth sessions)
+   ```
+   postgresql://postgres:[YOUR-DB-PASSWORD]@[YOUR-PROJECT-REF].supabase.co:5432/postgres
+   ```
+   Replace:
+   - `[YOUR-DB-PASSWORD]` with your Supabase database password
+   - `[YOUR-PROJECT-REF]` with your Supabase project reference (e.g., `abcdefghijklmnop`)
+   
+   You can find this in Supabase Dashboard → Settings → Database → Connection String (URI format)
+
 1. **TWITTER_CALLBACK_URL**
    ```
    https://sm-genie.vercel.app/auth/twitter/callback
@@ -88,6 +98,12 @@ Go to: https://vercel.com/kishan-madhavs-projects-1f348ecf/sm-genie/settings/env
    ```
    https://frontend-eight-pied-40.vercel.app
    ```
+
+6. **SESSION_SECRET** (if not already set)
+   ```
+   [Generate a random string, e.g., use: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"]
+   ```
+   Just create any long random string for session encryption
 
 **CRITICAL:** Make sure there are NO spaces, NO line breaks at the end of each URL!
 

@@ -99,22 +99,39 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // PostgreSQL session store for Vercel serverless compatibility
-const pgSession = require('connect-pg-simple')(session);
-const { Pool } = require('pg');
+// Build DATABASE_URL from Supabase credentials if not already set
+const DATABASE_URL = process.env.DATABASE_URL || 
+  (process.env.SUPABASE_URL && process.env.SUPABASE_DB_PASSWORD
+    ? `postgresql://postgres:${process.env.SUPABASE_DB_PASSWORD}@${new URL(process.env.SUPABASE_URL).hostname.replace('https://', '')}:5432/postgres`
+    : null);
 
-// Create PostgreSQL connection pool for sessions
-const sessionPool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-});
-
-// Session configuration with PostgreSQL store
-app.use(session({
-  store: new pgSession({
+let sessionStore;
+if (DATABASE_URL && process.env.NODE_ENV === 'production') {
+  // Use PostgreSQL session store in production (required for Vercel serverless)
+  const pgSession = require('connect-pg-simple')(session);
+  const { Pool } = require('pg');
+  
+  const sessionPool = new Pool({
+    connectionString: DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
+  });
+  
+  sessionStore = new pgSession({
     pool: sessionPool,
-    tableName: 'session', // Will auto-create table if it doesn't exist
+    tableName: 'session',
     createTableIfMissing: true
-  }),
+  });
+  
+  console.log('Using PostgreSQL session store for production');
+} else {
+  // Use memory store for development
+  console.log('Using memory session store (development only)');
+  sessionStore = new session.MemoryStore();
+}
+
+// Session configuration
+app.use(session({
+  store: sessionStore,
   secret: process.env.SESSION_SECRET || 'fallback-secret-change-in-production',
   resave: false,
   saveUninitialized: false,
