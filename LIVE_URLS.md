@@ -3,7 +3,7 @@
 ## 🎉 Your App is Live!
 
 **Frontend:** https://frontend-jwjywlmp9-kishan-madhavs-projects-1f348ecf.vercel.app
-**Backend:** https://sm-genie-ml8pqgfn1-kishan-madhavs-projects-1f348ecf.vercel.app
+**Backend:** https://sm-genie-hyl8sqlbu-kishan-madhavs-projects-1f348ecf.vercel.app
 
 ## 🔧 Final Step: Update OAuth Callback URLs
 
@@ -12,7 +12,7 @@ Go to: https://console.cloud.google.com/apis/credentials
 
 Find your OAuth 2.0 Client and add this redirect URI:
 ```
-https://sm-genie-ml8pqgfn1-kishan-madhavs-projects-1f348ecf.vercel.app/auth/google/callback
+https://sm-genie-hyl8sqlbu-kishan-madhavs-projects-1f348ecf.vercel.app/auth/google/callback
 ```
 
 ### 2. Twitter Developer Portal
@@ -20,7 +20,7 @@ Go to: https://developer.twitter.com/en/portal/dashboard
 
 Add callback URL:
 ```
-https://sm-genie-ml8pqgfn1-kishan-madhavs-projects-1f348ecf.vercel.app/auth/twitter/callback
+https://sm-genie-hyl8sqlbu-kishan-madhavs-projects-1f348ecf.vercel.app/auth/twitter/callback
 ```
 
 ### 3. Facebook Developer Console
@@ -28,8 +28,8 @@ Go to: https://developers.facebook.com/apps
 
 Add these URLs:
 ```
-https://sm-genie-ml8pqgfn1-kishan-madhavs-projects-1f348ecf.vercel.app/auth/facebook/callback
-https://sm-genie-ml8pqgfn1-kishan-madhavs-projects-1f348ecf.vercel.app/auth/instagram/callback
+https://sm-genie-hyl8sqlbu-kishan-madhavs-projects-1f348ecf.vercel.app/auth/facebook/callback
+https://sm-genie-hyl8sqlbu-kishan-madhavs-projects-1f348ecf.vercel.app/auth/instagram/callback
 ```
 
 ## 🧪 Test Your App
