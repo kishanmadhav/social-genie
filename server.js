@@ -80,7 +80,9 @@ app.use(cors({
     'http://localhost:3000', 
     'http://localhost:3001',
     'https://sm-genie-baip7xbmw-kishan-madhavs-projects-1f348ecf.vercel.app',
+    'https://sm-genie-cdd2onizk-kishan-madhavs-projects-1f348ecf.vercel.app',
     'https://frontend-7t5u541xf-kishan-madhavs-projects-1f348ecf.vercel.app',
+    'https://frontend-r98z64yrl-kishan-madhavs-projects-1f348ecf.vercel.app',
     'https://frontend-eight-pied-40.vercel.app'
   ],
   credentials: true
