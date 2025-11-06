@@ -99,30 +99,32 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // PostgreSQL session store for Vercel serverless compatibility
-// Build DATABASE_URL from Supabase credentials if not already set
-const DATABASE_URL = process.env.DATABASE_URL || 
-  (process.env.SUPABASE_URL && process.env.SUPABASE_DB_PASSWORD
-    ? `postgresql://postgres:${process.env.SUPABASE_DB_PASSWORD}@${new URL(process.env.SUPABASE_URL).hostname.replace('https://', '')}:5432/postgres`
-    : null);
-
 let sessionStore;
+const DATABASE_URL = process.env.DATABASE_URL;
+
 if (DATABASE_URL && process.env.NODE_ENV === 'production') {
-  // Use PostgreSQL session store in production (required for Vercel serverless)
-  const pgSession = require('connect-pg-simple')(session);
-  const { Pool } = require('pg');
-  
-  const sessionPool = new Pool({
-    connectionString: DATABASE_URL,
-    ssl: { rejectUnauthorized: false }
-  });
-  
-  sessionStore = new pgSession({
-    pool: sessionPool,
-    tableName: 'session',
-    createTableIfMissing: true
-  });
-  
-  console.log('Using PostgreSQL session store for production');
+  try {
+    // Use PostgreSQL session store in production (required for Vercel serverless)
+    const pgSession = require('connect-pg-simple')(session);
+    const { Pool } = require('pg');
+    
+    const sessionPool = new Pool({
+      connectionString: DATABASE_URL,
+      ssl: { rejectUnauthorized: false }
+    });
+    
+    sessionStore = new pgSession({
+      pool: sessionPool,
+      tableName: 'session',
+      createTableIfMissing: true
+    });
+    
+    console.log('✅ Using PostgreSQL session store for production');
+  } catch (error) {
+    console.error('❌ Failed to initialize PostgreSQL session store:', error.message);
+    console.log('⚠️ Falling back to memory store (OAuth may not work properly)');
+    sessionStore = new session.MemoryStore();
+  }
 } else {
   // Use memory store for development
   console.log('Using memory session store (development only)');
