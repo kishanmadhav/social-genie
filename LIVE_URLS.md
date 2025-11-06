@@ -3,16 +3,16 @@
 ## 🎉 Your App is Live!
 
 **Frontend:** https://frontend-jwjywlmp9-kishan-madhavs-projects-1f348ecf.vercel.app
-**Backend:** https://sm-genie-hyl8sqlbu-kishan-madhavs-projects-1f348ecf.vercel.app
+**Backend:** https://sm-genie-11byg4qpm-kishan-madhavs-projects-1f348ecf.vercel.app
 
-## 🔧 Final Step: Update OAuth Callback URLs
+## ⚠️ IMPORTANT: Update These Settings
 
 ### 1. Google Console
 Go to: https://console.cloud.google.com/apis/credentials
 
 Find your OAuth 2.0 Client and add this redirect URI:
 ```
-https://sm-genie-hyl8sqlbu-kishan-madhavs-projects-1f348ecf.vercel.app/auth/google/callback
+https://sm-genie-11byg4qpm-kishan-madhavs-projects-1f348ecf.vercel.app/auth/google/callback
 ```
 
 ### 2. Twitter Developer Portal
