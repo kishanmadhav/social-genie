@@ -20,7 +20,6 @@ const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3001';
 
 // Configure AWS S3 Client
 const s3Client = new S3Client({
@@ -76,23 +75,14 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // CORS configuration - Allow both backend and frontend origins
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://localhost:3001',
-  process.env.FRONTEND_URL
-].filter(Boolean); // Remove undefined values
-
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: [
+    'http://localhost:3000', 
+    'http://localhost:3001',
+    'https://sm-genie-baip7xbmw-kishan-madhavs-projects-1f348ecf.vercel.app',
+    'https://frontend-7t5u541xf-kishan-madhavs-projects-1f348ecf.vercel.app',
+    'https://frontend-eight-pied-40.vercel.app'
+  ],
   credentials: true
 }));
 
@@ -108,9 +98,7 @@ app.use(session({
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Required for cross-origin cookies in production
-    domain: process.env.NODE_ENV === 'production' ? undefined : undefined // Let the browser handle domain
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
 }));
 
@@ -135,67 +123,58 @@ const upload = multer({
 });
 
 // Passport Google Strategy (Primary Authentication)
-if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
-  passport.use(new GoogleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: process.env.GOOGLE_CALLBACK_URL || "http://localhost:3000/auth/google/callback"
-  }, async (accessToken, refreshToken, profile, done) => {
-    try {
-      // Create or update user in database
-      const user = await database.createOrUpdateUser(profile);
-      return done(null, user);
-    } catch (error) {
-      console.error('Google OAuth error:', error);
-      return done(error, null);
-    }
-  }));
-} else {
-  console.warn('Google OAuth not configured - GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET missing');
-}
+passport.use(new GoogleStrategy({
+  clientID: process.env.GOOGLE_CLIENT_ID,
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+  callbackURL: process.env.GOOGLE_CALLBACK_URL || "http://localhost:3000/auth/google/callback"
+}, async (accessToken, refreshToken, profile, done) => {
+  try {
+    // Create or update user in database
+    const user = await database.createOrUpdateUser(profile);
+    return done(null, user);
+  } catch (error) {
+    console.error('Google OAuth error:', error);
+    return done(error, null);
+  }
+}));
 
 // Passport Twitter Strategy (Secondary Authorization)
-if (process.env.TWITTER_API_KEY && process.env.TWITTER_API_SECRET) {
-  passport.use('twitter-link', new TwitterStrategy({
-    consumerKey: process.env.TWITTER_API_KEY,
-    consumerSecret: process.env.TWITTER_API_SECRET,
-    callbackURL: process.env.TWITTER_CALLBACK_URL || "http://localhost:3000/auth/twitter/callback",
-    passReqToCallback: true
-  }, async (req, token, tokenSecret, profile, done) => {
-    try {
-      // Get current user from session (must be logged in with Google)
-      const currentUser = req.user;
-      if (!currentUser) {
-        return done(new Error('No authenticated user found'), null);
-      }
-
-      // Link Twitter account to current user
-      await database.linkTwitterAccount(currentUser.id, profile, { token, tokenSecret });
-      
-      return done(null, { success: true, twitterProfile: profile });
-    } catch (error) {
-      console.error('Twitter OAuth error:', error);
-      return done(error, null);
+passport.use('twitter-link', new TwitterStrategy({
+  consumerKey: process.env.TWITTER_API_KEY,
+  consumerSecret: process.env.TWITTER_API_SECRET,
+  callbackURL: process.env.TWITTER_CALLBACK_URL || "http://localhost:3000/auth/twitter/callback",
+  passReqToCallback: true
+}, async (req, token, tokenSecret, profile, done) => {
+  try {
+    // Get current user from session (must be logged in with Google)
+    const currentUser = req.user;
+    if (!currentUser) {
+      return done(new Error('No authenticated user found'), null);
     }
-  }));
-} else {
-  console.warn('Twitter OAuth not configured - TWITTER_API_KEY or TWITTER_API_SECRET missing');
-}
+
+    // Link Twitter account to current user
+    await database.linkTwitterAccount(currentUser.id, profile, { token, tokenSecret });
+    
+    return done(null, { success: true, twitterProfile: profile });
+  } catch (error) {
+    console.error('Twitter OAuth error:', error);
+    return done(error, null);
+  }
+}));
 
 // Passport Instagram Strategy - DEPRECATED (Instagram Basic Display API no longer supported)
 // Keeping manual token approach and Facebook Graph API instead
 // passport.use('instagram-link', new InstagramStrategy({...}));
 
 // Passport Facebook Strategy (for Instagram Graph API access)
-if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
-  passport.use('facebook-link', new FacebookStrategy({
-    clientID: process.env.FACEBOOK_APP_ID,
-    clientSecret: process.env.FACEBOOK_APP_SECRET,
-    callbackURL: process.env.FACEBOOK_CALLBACK_URL || "http://localhost:3000/auth/facebook/callback",
-    profileFields: ['id', 'displayName', 'email', 'photos'],
-    scope: ['pages_show_list', 'pages_read_engagement', 'instagram_basic', 'instagram_content_publish', 'pages_manage_posts'],
-    passReqToCallback: true
-  }, async (req, accessToken, refreshToken, profile, done) => {
+passport.use('facebook-link', new FacebookStrategy({
+  clientID: process.env.FACEBOOK_APP_ID,
+  clientSecret: process.env.FACEBOOK_APP_SECRET,
+  callbackURL: process.env.FACEBOOK_CALLBACK_URL || "http://localhost:3000/auth/facebook/callback",
+  profileFields: ['id', 'displayName', 'email', 'photos'],
+  scope: ['pages_show_list', 'pages_read_engagement', 'instagram_basic', 'instagram_content_publish', 'pages_manage_posts'],
+  passReqToCallback: true
+}, async (req, accessToken, refreshToken, profile, done) => {
   try {
     // Get current user from session (must be logged in with Google)
     const currentUser = req.user;
@@ -244,10 +223,7 @@ if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
     console.error('Facebook OAuth error:', error);
     return done(error, null);
   }
-  }));
-} else {
-  console.warn('Facebook OAuth not configured - FACEBOOK_APP_ID or FACEBOOK_APP_SECRET missing');
-}
+}));
 
 // Manual Instagram OAuth (alternative to passport-instagram for Instagram Graph API)
 app.get('/auth/instagram-manual', (req, res) => {
@@ -265,97 +241,58 @@ passport.deserializeUser((user, done) => {
   done(null, user);
 });
 
-// NOTE: Static files removed - using separate Next.js frontend
-// For local development with old frontend, uncomment:
-// app.use(express.static('public'));
-
-// Health check route
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    env: {
-      hasSupabase: !!(process.env.SUPABASE_URL && process.env.SUPABASE_KEY),
-      hasGoogle: !!process.env.GOOGLE_CLIENT_ID,
-      hasTwitter: !!process.env.TWITTER_API_KEY,
-      hasOpenAI: !!process.env.OPENAI_API_KEY,
-      hasS3: !!process.env.S3_BUCKET_NAME
-    }
-  });
-});
+// Serve static files
+app.use(express.static('public'));
 
 // Routes
 app.get('/', (req, res) => {
-  res.json({ 
-    message: 'Social Genie API', 
-    version: '1.0.0',
-    endpoints: ['/api/health', '/api/user', '/auth/google']
-  });
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Authentication routes
 // Google OAuth (Primary Authentication)
-app.get('/auth/google', (req, res, next) => {
-  if (!process.env.GOOGLE_CLIENT_ID) {
-    return res.status(503).json({ error: 'Google OAuth not configured' });
-  }
-  passport.authenticate('google', {
-    scope: ['profile', 'email'],
-    prompt: 'select_account'
-  })(req, res, next);
-});
+app.get('/auth/google', passport.authenticate('google', {
+  scope: ['profile', 'email'],
+  prompt: 'select_account' // Force account selection every time
+}));
 
-app.get('/auth/google/callback', (req, res, next) => {
-  if (!process.env.GOOGLE_CLIENT_ID) {
-    return res.redirect(`${FRONTEND_URL}/?error=oauth_not_configured`);
-  }
-  passport.authenticate('google', { failureRedirect: `${FRONTEND_URL}/?error=auth_failed` })(req, res, async () => {
+app.get('/auth/google/callback',
+  passport.authenticate('google', { failureRedirect: 'http://localhost:3001/?error=auth_failed' }),
+  async (req, res) => {
     // Check if user has completed onboarding (has brand profile)
     const brandProfile = await database.getBrandProfile(req.user.id);
     
     if (brandProfile) {
-      res.redirect(`${FRONTEND_URL}/dashboard`);
+      res.redirect('http://localhost:3001/dashboard');
     } else {
-      res.redirect(`${FRONTEND_URL}/onboarding`);
+      res.redirect('http://localhost:3001/onboarding');
     }
-  });
-});
+  }
+);
 
 // Twitter OAuth (Secondary Authorization)
-app.get('/auth/twitter', (req, res, next) => {
-  if (!process.env.TWITTER_API_KEY) {
-    return res.status(503).json({ error: 'Twitter OAuth not configured' });
-  }
-  passport.authenticate('twitter-link')(req, res, next);
-});
+app.get('/auth/twitter', passport.authenticate('twitter-link'));
 
-app.get('/auth/twitter/callback', (req, res, next) => {
-  if (!process.env.TWITTER_API_KEY) {
-    return res.redirect(`${FRONTEND_URL}/connect?error=oauth_not_configured`);
+app.get('/auth/twitter/callback',
+  passport.authenticate('twitter-link', { failureRedirect: 'http://localhost:3001/connect?error=twitter_auth_failed' }),
+  (req, res) => {
+    res.redirect('http://localhost:3001/connect?twitter_linked=true');
   }
-  passport.authenticate('twitter-link', { failureRedirect: `${FRONTEND_URL}/connect?error=twitter_auth_failed` })(req, res, () => {
-    res.redirect(`${FRONTEND_URL}/connect?twitter_linked=true`);
-  });
-});
+);
 
 // Facebook OAuth (for Instagram Graph API access)
-app.get('/auth/facebook', (req, res, next) => {
-  if (!process.env.FACEBOOK_APP_ID) {
-    return res.status(503).json({ error: 'Facebook OAuth not configured' });
-  }
+app.get('/auth/facebook', 
   passport.authenticate('facebook-link', { 
     scope: ['pages_show_list', 'pages_read_engagement', 'instagram_basic', 'instagram_content_publish', 'pages_manage_posts']
-  })(req, res, next);
-});
+  })
+);
 
-app.get('/auth/facebook/callback', (req, res, next) => {
-  if (!process.env.FACEBOOK_APP_ID) {
-    return res.redirect(`${FRONTEND_URL}/connect?error=oauth_not_configured`);
+app.get('/auth/facebook/callback',
+  passport.authenticate('facebook-link', { failureRedirect: 'http://localhost:3001/connect?error=facebook_auth_failed' }),
+  (req, res) => {
+    res.redirect('http://localhost:3001/connect?facebook_linked=true');
   }
-  passport.authenticate('facebook-link', { failureRedirect: `${FRONTEND_URL}/connect?error=facebook_auth_failed` })(req, res, () => {
-    res.redirect(`${FRONTEND_URL}/connect?facebook_linked=true`);
-  });
-});
+);
 
 // Instagram OAuth (Secondary Authorization)
 app.get('/auth/instagram', (req, res) => {
@@ -1641,13 +1578,7 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-// For local development
-if (process.env.NODE_ENV !== 'production') {
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log(`Visit http://localhost:${PORT} to access the application`);
-  });
-}
-
-// Export for Vercel serverless
-module.exports = app;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log(`Visit http://localhost:${PORT} to access the application`);
+});
