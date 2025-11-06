@@ -267,13 +267,18 @@ app.get('/auth/google', passport.authenticate('google', {
 app.get('/auth/google/callback',
   passport.authenticate('google', { failureRedirect: `${FRONTEND_URL}/?error=auth_failed` }),
   async (req, res) => {
-    // Check if user has completed onboarding (has brand profile)
-    const brandProfile = await database.getBrandProfile(req.user.id);
-    
-    if (brandProfile) {
-      res.redirect(`${FRONTEND_URL}/dashboard`);
-    } else {
-      res.redirect(`${FRONTEND_URL}/onboarding`);
+    try {
+      // Check if user has completed onboarding (has brand profile)
+      const brandProfile = await database.getBrandProfile(req.user.id);
+      
+      if (brandProfile) {
+        res.redirect(`${FRONTEND_URL}/dashboard`);
+      } else {
+        res.redirect(`${FRONTEND_URL}/onboarding`);
+      }
+    } catch (error) {
+      console.error('OAuth callback error:', error);
+      res.redirect(`${FRONTEND_URL}/?error=callback_failed`);
     }
   }
 );
@@ -1575,9 +1580,13 @@ app.get(['/dashboard', '/link-accounts', '/link-twitter', '/link-instagram'], (r
 // Error handling middleware
 app.use((error, req, res, next) => {
   console.error('Server error:', error);
+  console.error('Error stack:', error.stack);
+  console.error('Request URL:', req.url);
+  console.error('Request method:', req.method);
   res.status(500).json({
     error: 'Internal server error',
-    message: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
+    message: error.message || 'Something went wrong',
+    ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
   });
 });
 

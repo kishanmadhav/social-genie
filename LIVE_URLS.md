@@ -3,16 +3,44 @@
 ## 🎉 Your App is Live!
 
 **Frontend:** https://frontend-jwjywlmp9-kishan-madhavs-projects-1f348ecf.vercel.app
-**Backend:** https://sm-genie-11byg4qpm-kishan-madhavs-projects-1f348ecf.vercel.app
+**Backend:** https://sm-genie-2qj0imx9d-kishan-madhavs-projects-1f348ecf.vercel.app
 
-## ⚠️ IMPORTANT: Update These Settings
+## ⚠️ CRITICAL: Add These Environment Variables in Vercel
+
+### Backend Environment Variables (REQUIRED)
+Go to: https://vercel.com/kishan-madhavs-projects-1f348ecf/sm-genie/settings/environment-variables
+
+Add these THREE variables for Production:
+
+1. **GOOGLE_CALLBACK_URL**
+   ```
+   https://sm-genie-2qj0imx9d-kishan-madhavs-projects-1f348ecf.vercel.app/auth/google/callback
+   ```
+
+2. **FRONTEND_URL** (THIS IS CRITICAL - Missing this causes the internal server error!)
+   ```
+   https://frontend-jwjywlmp9-kishan-madhavs-projects-1f348ecf.vercel.app
+   ```
+
+3. Verify all other env vars are set (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, etc.)
+
+### Frontend Environment Variables
+Go to: https://vercel.com/kishan-madhavs-projects-1f348ecf/frontend/settings/environment-variables
+
+Update for Production:
+- **NEXT_PUBLIC_API_URL**
+  ```
+  https://sm-genie-2qj0imx9d-kishan-madhavs-projects-1f348ecf.vercel.app
+  ```
+
+## ⚠️ IMPORTANT: Update OAuth Callback URLs
 
 ### 1. Google Console
 Go to: https://console.cloud.google.com/apis/credentials
 
 Find your OAuth 2.0 Client and add this redirect URI:
 ```
-https://sm-genie-11byg4qpm-kishan-madhavs-projects-1f348ecf.vercel.app/auth/google/callback
+https://sm-genie-2qj0imx9d-kishan-madhavs-projects-1f348ecf.vercel.app/auth/google/callback
 ```
 
 ### 2. Twitter Developer Portal
