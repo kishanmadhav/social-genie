@@ -20,6 +20,7 @@ const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3001';
 
 // Configure AWS S3 Client
 const s3Client = new S3Client({
@@ -75,17 +76,21 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // CORS configuration - Allow both backend and frontend origins
+const allowedOrigins = [
+  'http://localhost:3000', 
+  'http://localhost:3001',
+  FRONTEND_URL,
+  'https://sm-genie-11byg4qpm-kishan-madhavs-projects-1f348ecf.vercel.app',
+  'https://sm-genie-58hjnnlio-kishan-madhavs-projects-1f348ecf.vercel.app',
+  'https://sm-genie-995j7tkdx-kishan-madhavs-projects-1f348ecf.vercel.app',
+  'https://sm-genie-hyl8sqlbu-kishan-madhavs-projects-1f348ecf.vercel.app',
+  'https://frontend-jwjywlmp9-kishan-madhavs-projects-1f348ecf.vercel.app',
+  'https://frontend-7t5u541xf-kishan-madhavs-projects-1f348ecf.vercel.app',
+  'https://frontend-eight-pied-40.vercel.app'
+].filter((origin, index, self) => origin && self.indexOf(origin) === index); // Remove duplicates and empty values
+
 app.use(cors({
-  origin: [
-    'http://localhost:3000', 
-    'http://localhost:3001',
-    'https://sm-genie-11byg4qpm-kishan-madhavs-projects-1f348ecf.vercel.app',
-    'https://sm-genie-995j7tkdx-kishan-madhavs-projects-1f348ecf.vercel.app',
-    'https://sm-genie-hyl8sqlbu-kishan-madhavs-projects-1f348ecf.vercel.app',
-    'https://frontend-jwjywlmp9-kishan-madhavs-projects-1f348ecf.vercel.app',
-    'https://frontend-7t5u541xf-kishan-madhavs-projects-1f348ecf.vercel.app',
-    'https://frontend-eight-pied-40.vercel.app'
-  ],
+  origin: allowedOrigins,
   credentials: true
 }));
 
@@ -260,15 +265,15 @@ app.get('/auth/google', passport.authenticate('google', {
 }));
 
 app.get('/auth/google/callback',
-  passport.authenticate('google', { failureRedirect: 'http://localhost:3001/?error=auth_failed' }),
+  passport.authenticate('google', { failureRedirect: `${FRONTEND_URL}/?error=auth_failed` }),
   async (req, res) => {
     // Check if user has completed onboarding (has brand profile)
     const brandProfile = await database.getBrandProfile(req.user.id);
     
     if (brandProfile) {
-      res.redirect('http://localhost:3001/dashboard');
+      res.redirect(`${FRONTEND_URL}/dashboard`);
     } else {
-      res.redirect('http://localhost:3001/onboarding');
+      res.redirect(`${FRONTEND_URL}/onboarding`);
     }
   }
 );
@@ -277,9 +282,9 @@ app.get('/auth/google/callback',
 app.get('/auth/twitter', passport.authenticate('twitter-link'));
 
 app.get('/auth/twitter/callback',
-  passport.authenticate('twitter-link', { failureRedirect: 'http://localhost:3001/connect?error=twitter_auth_failed' }),
+  passport.authenticate('twitter-link', { failureRedirect: `${FRONTEND_URL}/connect?error=twitter_auth_failed` }),
   (req, res) => {
-    res.redirect('http://localhost:3001/connect?twitter_linked=true');
+    res.redirect(`${FRONTEND_URL}/connect?twitter_linked=true`);
   }
 );
 
@@ -291,9 +296,9 @@ app.get('/auth/facebook',
 );
 
 app.get('/auth/facebook/callback',
-  passport.authenticate('facebook-link', { failureRedirect: 'http://localhost:3001/connect?error=facebook_auth_failed' }),
+  passport.authenticate('facebook-link', { failureRedirect: `${FRONTEND_URL}/connect?error=facebook_auth_failed` }),
   (req, res) => {
-    res.redirect('http://localhost:3001/connect?facebook_linked=true');
+    res.redirect(`${FRONTEND_URL}/connect?facebook_linked=true`);
   }
 );
 
