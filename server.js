@@ -104,6 +104,11 @@ const DATABASE_URL = process.env.DATABASE_URL;
 
 if (DATABASE_URL && process.env.NODE_ENV === 'production') {
   try {
+    // Validate DATABASE_URL format
+    if (!DATABASE_URL.startsWith('postgresql://') && !DATABASE_URL.startsWith('postgres://')) {
+      throw new Error('DATABASE_URL must start with postgresql:// or postgres://');
+    }
+    
     // Use PostgreSQL session store in production (required for Vercel serverless)
     const pgSession = require('connect-pg-simple')(session);
     const { Pool } = require('pg');
@@ -111,6 +116,16 @@ if (DATABASE_URL && process.env.NODE_ENV === 'production') {
     const sessionPool = new Pool({
       connectionString: DATABASE_URL,
       ssl: { rejectUnauthorized: false }
+    });
+    
+    // Test the connection
+    sessionPool.connect((err, client, done) => {
+      if (err) {
+        console.error('❌ PostgreSQL connection test failed:', err.message);
+      } else {
+        console.log('✅ PostgreSQL connection test successful');
+        done();
+      }
     });
     
     sessionStore = new pgSession({
@@ -122,6 +137,7 @@ if (DATABASE_URL && process.env.NODE_ENV === 'production') {
     console.log('✅ Using PostgreSQL session store for production');
   } catch (error) {
     console.error('❌ Failed to initialize PostgreSQL session store:', error.message);
+    console.error('DATABASE_URL value (first 50 chars):', DATABASE_URL ? DATABASE_URL.substring(0, 50) + '...' : 'undefined');
     console.log('⚠️ Falling back to memory store (OAuth may not work properly)');
     sessionStore = new session.MemoryStore();
   }
