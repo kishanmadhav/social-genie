@@ -249,13 +249,24 @@ passport.deserializeUser((user, done) => {
   done(null, user);
 });
 
-// Serve static files
-app.use(express.static('public'));
-
-// Routes
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
+// Serve static files (only in development)
+if (process.env.NODE_ENV !== 'production') {
+  app.use(express.static('public'));
+  
+  // Routes for SPA
+  app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  });
+  
+  app.get(['/dashboard', '/link-accounts', '/link-twitter', '/link-instagram'], (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  });
+} else {
+  // In production, redirect root to frontend
+  app.get('/', (req, res) => {
+    res.redirect(FRONTEND_URL || 'https://frontend-jwjywlmp9-kishan-madhavs-projects-1f348ecf.vercel.app');
+  });
+}
 
 // Authentication routes
 // Google OAuth (Primary Authentication)
@@ -1570,11 +1581,6 @@ app.get('/api/analytics/:platform', async (req, res) => {
       details: error.message
     });
   }
-});
-
-// SPA routes
-app.get(['/dashboard', '/link-accounts', '/link-twitter', '/link-instagram'], (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Error handling middleware
