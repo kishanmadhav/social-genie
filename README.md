@@ -1,54 +1,339 @@
-# Social Genie - AI-Powered Social Media Management Platform
+# Social Genie# Social Genie
 
-**A product by Agentic Genie**
 
-Social Genie is a comprehensive social media management platform that enables users to schedule posts, generate AI-powered content, and manage multiple social media accounts from a single dashboard.
 
-## Features
+**A product by Agentic Genie****A product by Agentic Genie**
 
-- 🔐 **Google OAuth Authentication** - Sign in with your Google account
-- 🐦 **X Account Linking** - Authorize access to your X (Twitter) account
-- 📸 **Instagram Integration** - Connect and manage your Instagram account
-- 📝 **Text Posting** - Post tweets up to 280 characters
-- 🖼️ **Image Upload** - Upload and post images with your content
-- 🎨 **AI Image Generation** - Generate images using DALL-E 3 with GPT-4o-mini captions
 
-## Authentication Flow (Buffer.com Style)
 
-1. **Sign in with Google** - Primary authentication using your Google account
-2. **Link X Account** - Authorize access to your X (Twitter) account
-3. **Start Posting** - Post tweets and images seamlessly
+AI-powered social media management platform for scheduling posts, generating content, and managing Twitter, Instagram, and Facebook accounts from a single dashboard.AI-powered social media management platform for scheduling posts, generating content, and managing Twitter, Instagram, and Facebook accounts from a single dashboard.
 
-This approach provides better security and user experience compared to direct social media authentication.
 
-## Prerequisites
 
-Before you begin, ensure you have:
+## Features## Features
 
-1. **Node.js** (v14 or higher) installed
-2. **Google Cloud Console Account** for OAuth setup
-3. **Twitter Developer Account** with API access
-4. **Supabase Account** for database management
-5. **OpenAI API Key** for AI image and caption generation
-6. **AWS Account** for S3 storage (see `AWS_S3_SETUP_GUIDE.md`)
 
-## Setup Instructions
 
-### 1. Google OAuth Setup
+- 🔐 Google OAuth Authentication- 🔐 Google OAuth Authentication
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select an existing one
-3. Enable the Google+ API
-4. Go to "Credentials" → "Create Credentials" → "OAuth 2.0 Client IDs"
-5. Configure the OAuth consent screen
-6. Set authorized redirect URIs:
-   - `http://localhost:3000/auth/google/callback` (development)
-   - `https://yourdomain.com/auth/google/callback` (production)
-7. Copy your Client ID and Client Secret
+- 🐦 Twitter/X Integration- 🐦 Twitter/X Integration
 
-### 2. Twitter API Setup
+- 📸 Instagram & Facebook Support- 📸 Instagram & Facebook Support
 
-1. Go to [Twitter Developer Portal](https://developer.twitter.com/)
+- 🎨 AI Content Generation (DALL-E 3 + GPT-4)- 🎨 AI Content Generation (DALL-E 3 + GPT-4)
+
+- 📅 Smart Post Scheduling- � Smart Post Scheduling
+
+- 📊 Analytics Dashboard- 📊 Analytics Dashboard
+
+- ☁️ AWS S3 Storage- ☁️ AWS S3 Storage
+
+- 🗄️ Supabase Database- 🗄️ Supabase Database
+
+
+
+## Quick Start## Quick Start
+
+
+
+### Prerequisites### Prerequisites
+
+- Node.js (v18+)- Node.js (v18+)
+
+- Google, Twitter, Facebook developer accounts- Google, Twitter, Facebook developer accounts
+
+- Supabase account- Supabase account
+
+- OpenAI API key- OpenAI API key
+
+- AWS S3 bucket- AWS S3 bucket
+
+
+
+### Installation### Installation
+
+
+
+```bash```bash
+
+# Clone repository# Clone repository
+
+git clone https://github.com/kishanmadhav/social-genie.gitgit clone https://github.com/kishanmadhav/social-genie.git
+
+cd social-geniecd social-genie
+
+
+
+# Install backend dependencies# Install backend dependencies
+
+npm installnpm install
+
+
+
+# Install frontend dependencies# Install frontend dependencies
+
+cd frontendcd frontend
+
+npm installnpm install
+
+``````
+
+
+
+### Configuration### Configuration
+
+
+
+1. Copy `.env.example` to `.env` and fill in your credentials1. Copy `.env.example` to `.env` and fill in your credentials
+
+2. Set up OAuth redirect URIs in provider consoles2. Set up OAuth redirect URIs in provider consoles
+
+3. Configure Supabase database (see `supabase-schema.sql`)3. Configure Supabase database (see `supabase-schema.sql`)
+
+
+
+### Run Locally### Run Locally
+
+
+
+```bash```bash
+
+# Terminal 1 - Backend# Terminal 1 - Backend
+
+npm startnpm start
+
+
+
+# Terminal 2 - Frontend# Terminal 2 - Frontend
+
+cd frontendcd frontend
+
+npm run devnpm run dev
+
+``````
+
+
+
+Visit `http://localhost:3001`Visit `http://localhost:3001`
+
+
+
+## Deployment## Deployment
+
+
+
+### Vercel (Recommended)### Vercel (Recommended)
+
+
+
+**Frontend:****Frontend:**
+
+```bash```bash
+
+cd frontendcd frontend
+
+vercel --prodvercel --prod
+
+``````
+
+
+
+**Backend:****Backend:**
+
+```bash```bash
+
+vercel --prodvercel --prod
+
+``````
+
+
+
+Update environment variables in Vercel dashboard after deployment.Update environment variables in Vercel dashboard after deployment.
+
+
+
+## Tech Stack## Tech Stack
+
+
+
+**Frontend:****Frontend:**
+
+- Next.js 14 (App Router)- Next.js 14 (App Router)
+
+- TypeScript- TypeScript
+
+- Tailwind CSS- Tailwind CSS
+
+- React Context- React Context
+
+
+
+**Backend:****Backend:**
+
+- Express.js- Express.js
+
+- Passport.js (OAuth)- Passport.js (OAuth)
+
+- Twitter API v2- Twitter API v2
+
+- Instagram Graph API- Instagram Graph API
+
+- Facebook Graph API- Facebook Graph API
+
+
+
+**Services:****Services:**
+
+- Supabase (Database)- Supabase (Database)
+
+- AWS S3 (Storage)- AWS S3 (Storage)
+
+- OpenAI (DALL-E 3, GPT-4)- OpenAI (DALL-E 3, GPT-4)
+
+- Vercel (Hosting)- Vercel (Hosting)
+
+
+
+## Environment Variables## Environment Variables
+
+
+
+### Backend (.env)### Backend (.env)
+
+```env```env
+
+# OAuth# OAuth
+
+GOOGLE_CLIENT_ID=GOOGLE_CLIENT_ID=
+
+GOOGLE_CLIENT_SECRET=GOOGLE_CLIENT_SECRET=
+
+GOOGLE_CALLBACK_URL=GOOGLE_CALLBACK_URL=
+
+
+
+TWITTER_API_KEY=TWITTER_API_KEY=
+
+TWITTER_API_SECRET=TWITTER_API_SECRET=
+
+TWITTER_CLIENT_ID=TWITTER_CLIENT_ID=
+
+TWITTER_CLIENT_SECRET=TWITTER_CLIENT_SECRET=
+
+TWITTER_CALLBACK_URL=TWITTER_CALLBACK_URL=
+
+
+
+FACEBOOK_APP_ID=FACEBOOK_APP_ID=
+
+FACEBOOK_APP_SECRET=FACEBOOK_APP_SECRET=
+
+FACEBOOK_CALLBACK_URL=FACEBOOK_CALLBACK_URL=
+
+
+
+INSTAGRAM_CLIENT_ID=INSTAGRAM_CLIENT_ID=
+
+INSTAGRAM_CLIENT_SECRET=INSTAGRAM_CLIENT_SECRET=
+
+INSTAGRAM_CALLBACK_URL=INSTAGRAM_CALLBACK_URL=
+
+
+
+# Database# Database
+
+SUPABASE_URL=SUPABASE_URL=
+
+SUPABASE_SERVICE_ROLE_KEY=SUPABASE_SERVICE_ROLE_KEY=
+
+
+
+# AI# AI
+
+OPENAI_API_KEY=OPENAI_API_KEY=
+
+
+
+# Storage# Storage
+
+AWS_ACCESS_KEY_ID=AWS_ACCESS_KEY_ID=
+
+AWS_SECRET_ACCESS_KEY=AWS_SECRET_ACCESS_KEY=
+
+AWS_REGION=AWS_REGION=
+
+S3_BUCKET_NAME=S3_BUCKET_NAME=
+
+
+
+# Config# Config
+
+SESSION_SECRET=SESSION_SECRET=
+
+PORT=3000PORT=3000
+
+NODE_ENV=developmentNODE_ENV=development
+
+``````
+
+
+
+### Frontend (.env.local)### Frontend (.env.local)
+
+```env```env
+
+NEXT_PUBLIC_API_URL=http://localhost:3000NEXT_PUBLIC_API_URL=http://localhost:3000
+
+``````
+
+
+
+## Project Structure## Project Structure
+
+
+
+``````
+
+social-genie/social-genie/
+
+├── frontend/          # Next.js frontend├── frontend/          # Next.js frontend
+
+│   ├── app/          # App router pages│   ├── app/          # App router pages
+
+│   ├── components/   # React components│   ├── components/   # React components
+
+│   └── lib/          # API utilities│   └── lib/          # API utilities
+
+├── public/           # Static assets (legacy)├── public/           # Static assets (legacy)
+
+├── server.js         # Express backend├── server.js         # Express backend
+
+├── database.js       # Supabase integration├── database.js       # Supabase integration
+
+└── package.json      # Backend dependencies└── package.json      # Backend dependencies
+
+``````
+
+
+
+## License## License
+
+
+
+MIT License - See LICENSE file for detailsMIT License - See LICENSE file for details
+
+
+
+## Support## Support
+
+
+
+For issues and questions:For issues and questions:
+
+- GitHub: https://github.com/kishanmadhav/social-genie- GitHub: https://github.com/kishanmadhav/social-genie
+
+- Documentation: See LIVE_URLS.md for deployment info- Documentation: See LIVE_URLS.md for deployment info
+
 2. Apply for a developer account if you don't have one
 3. Create a new app in the Twitter Developer Portal
 4. Fill in the required information:
