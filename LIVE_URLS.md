@@ -51,7 +51,8 @@ Go to: https://developer.twitter.com/en/portal/dashboard
 
 Add callback URL:
 ```
-https://sm-genie-hyl8sqlbu-kishan-madhavs-projects-1f348ecf.vercel.app/auth/twitter/callback
+https://sm-genie.vercel.app/auth/twitter/callback
+http://localhost:3000/auth/twitter/callback
 ```
 
 ### 3. Facebook Developer Console
@@ -59,8 +60,10 @@ Go to: https://developers.facebook.com/apps
 
 Add these URLs:
 ```
-https://sm-genie-hyl8sqlbu-kishan-madhavs-projects-1f348ecf.vercel.app/auth/facebook/callback
-https://sm-genie-hyl8sqlbu-kishan-madhavs-projects-1f348ecf.vercel.app/auth/instagram/callback
+https://sm-genie.vercel.app/auth/facebook/callback
+https://sm-genie.vercel.app/auth/instagram/callback
+http://localhost:3000/auth/facebook/callback
+http://localhost:3000/auth/instagram/callback
 ```
 
 ## 🧪 Test Your App
