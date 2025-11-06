@@ -98,54 +98,10 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// PostgreSQL session store for Vercel serverless compatibility
-let sessionStore;
-const DATABASE_URL = process.env.DATABASE_URL;
-
-if (DATABASE_URL && process.env.NODE_ENV === 'production') {
-  try {
-    // Validate DATABASE_URL format
-    if (!DATABASE_URL.startsWith('postgresql://') && !DATABASE_URL.startsWith('postgres://')) {
-      throw new Error('DATABASE_URL must start with postgresql:// or postgres://');
-    }
-    
-    // Use PostgreSQL session store in production (required for Vercel serverless)
-    const pgSession = require('connect-pg-simple')(session);
-    const { Pool } = require('pg');
-    
-    const sessionPool = new Pool({
-      connectionString: DATABASE_URL,
-      ssl: { rejectUnauthorized: false }
-    });
-    
-    // Test the connection
-    sessionPool.connect((err, client, done) => {
-      if (err) {
-        console.error('❌ PostgreSQL connection test failed:', err.message);
-      } else {
-        console.log('✅ PostgreSQL connection test successful');
-        done();
-      }
-    });
-    
-    sessionStore = new pgSession({
-      pool: sessionPool,
-      tableName: 'session',
-      createTableIfMissing: true
-    });
-    
-    console.log('✅ Using PostgreSQL session store for production');
-  } catch (error) {
-    console.error('❌ Failed to initialize PostgreSQL session store:', error.message);
-    console.error('DATABASE_URL value (first 50 chars):', DATABASE_URL ? DATABASE_URL.substring(0, 50) + '...' : 'undefined');
-    console.log('⚠️ Falling back to memory store (OAuth may not work properly)');
-    sessionStore = new session.MemoryStore();
-  }
-} else {
-  // Use memory store for development
-  console.log('Using memory session store (development only)');
-  sessionStore = new session.MemoryStore();
-}
+// Session store - Use memory store for now (PostgreSQL causing DNS issues)
+// TODO: Fix PostgreSQL session store for Twitter OAuth to work properly
+console.log('⚠️ Using memory session store (Twitter OAuth may not work in production)');
+const sessionStore = new session.MemoryStore();
 
 // Session configuration
 app.use(session({
