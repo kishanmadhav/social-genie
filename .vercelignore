@@ -1,9 +1,0 @@
-node_modules
-.env
-.env.local
-.env.production
-frontend/
-sm-platform/
-public/
-*.log
-.DS_Store

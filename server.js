@@ -1608,6 +1608,58 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
+// Test Supabase connection endpoint
+app.get('/api/test-supabase', async (req, res) => {
+  try {
+    console.log('🔄 Testing Supabase connection...');
+    
+    // Check environment variables
+    const hasSupabaseUrl = !!process.env.SUPABASE_URL;
+    const hasSupabaseKey = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
+    
+    console.log('SUPABASE_URL present:', hasSupabaseUrl);
+    console.log('SUPABASE_SERVICE_ROLE_KEY present:', hasSupabaseKey);
+    
+    if (!hasSupabaseUrl || !hasSupabaseKey) {
+      return res.status(500).json({
+        success: false,
+        error: 'Missing Supabase environment variables',
+        details: {
+          hasSupabaseUrl,
+          hasSupabaseKey,
+          supabaseUrlLength: process.env.SUPABASE_URL?.length || 0,
+          supabaseKeyLength: process.env.SUPABASE_SERVICE_ROLE_KEY?.length || 0
+        }
+      });
+    }
+
+    // Test database connection using database service
+    const result = await database.testConnection();
+    
+    console.log('✅ Supabase connection test successful');
+    console.log('Users count:', result.usersCount);
+
+    res.json({
+      success: true,
+      message: 'Supabase connection working perfectly!',
+      ...result,
+      environmentVariables: {
+        hasSupabaseUrl,
+        hasSupabaseKey,
+        supabaseUrlHost: process.env.SUPABASE_URL?.split('//')[1]?.split('.')[0] || 'unknown'
+      }
+    });
+  } catch (error) {
+    console.error('❌ Supabase connection test error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // For local development
 if (process.env.NODE_ENV !== 'production') {
   app.listen(PORT, () => {
