@@ -260,7 +260,9 @@ passport.use('twitter-link', new TwitterStrategy({
   clientSecret: process.env.TWITTER_CLIENT_SECRET,
   callbackURL: process.env.TWITTER_CALLBACK_URL || "http://localhost:3000/auth/twitter/callback",
   passReqToCallback: true,
-  clientType: 'confidential'
+  authorizationURL: 'https://twitter.com/i/oauth2/authorize',
+  tokenURL: 'https://api.twitter.com/2/oauth2/token',
+  scope: ['tweet.read', 'tweet.write', 'users.read', 'offline.access']
 }, async (req, accessToken, refreshToken, profile, done) => {
   try {
     // Get current user from session (must be logged in with Google)
@@ -409,11 +411,7 @@ app.get('/auth/google/callback',
 );
 
 // Twitter OAuth 2.0 (Secondary Authorization)
-app.get('/auth/twitter', 
-  passport.authenticate('twitter-link', {
-    scope: ['tweet.read', 'tweet.write', 'users.read', 'offline.access']
-  })
-);
+app.get('/auth/twitter', passport.authenticate('twitter-link'));
 
 app.get('/auth/twitter/callback',
   passport.authenticate('twitter-link', { failureRedirect: `${FRONTEND_URL}/connect?error=twitter_auth_failed` }),
