@@ -166,9 +166,6 @@ let sessionStore;
 if (process.env.NODE_ENV === 'production') {
   console.log('🔄 Using Supabase session store for production');
   sessionStore = new SupabaseSessionStore({ ttl: 24 * 60 * 60 }); // 24 hours
-  
-  // Initialize OAuth sessions table
-  database.initializeOAuthSessionsTable().catch(console.error);
 } else {
   console.log('📝 Using memory session store (development mode)');
   sessionStore = new session.MemoryStore();
