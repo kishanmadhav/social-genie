@@ -98,10 +98,81 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Session store - Use memory store for now (PostgreSQL causing DNS issues)
-// TODO: Fix PostgreSQL session store for Twitter OAuth to work properly
-console.log('⚠️ Using memory session store (Twitter OAuth may not work in production)');
-const sessionStore = new session.MemoryStore();
+// Custom Supabase session store for Twitter OAuth
+class SupabaseSessionStore extends session.Store {
+  constructor(options = {}) {
+    super(options);
+    this.ttl = options.ttl || 86400; // 24 hours in seconds
+  }
+
+  async get(sid, callback) {
+    try {
+      const { data, error } = await database.getSupabaseClient()
+        .from('oauth_sessions')
+        .select('data, expires_at')
+        .eq('sid', sid)
+        .single();
+
+      if (error || !data) {
+        return callback(null, null);
+      }
+
+      // Check if session expired
+      if (new Date(data.expires_at) < new Date()) {
+        await this.destroy(sid, () => {});
+        return callback(null, null);
+      }
+
+      callback(null, JSON.parse(data.data));
+    } catch (err) {
+      callback(err);
+    }
+  }
+
+  async set(sid, session, callback) {
+    try {
+      const expires_at = new Date(Date.now() + this.ttl * 1000).toISOString();
+      
+      const { error } = await database.getSupabaseClient()
+        .from('oauth_sessions')
+        .upsert({
+          sid,
+          data: JSON.stringify(session),
+          expires_at
+        });
+
+      callback(error);
+    } catch (err) {
+      callback(err);
+    }
+  }
+
+  async destroy(sid, callback) {
+    try {
+      const { error } = await database.getSupabaseClient()
+        .from('oauth_sessions')
+        .delete()
+        .eq('sid', sid);
+
+      callback(error);
+    } catch (err) {
+      callback(err);
+    }
+  }
+}
+
+// Session store configuration
+let sessionStore;
+if (process.env.NODE_ENV === 'production') {
+  console.log('🔄 Using Supabase session store for production');
+  sessionStore = new SupabaseSessionStore({ ttl: 24 * 60 * 60 }); // 24 hours
+  
+  // Initialize OAuth sessions table
+  database.initializeOAuthSessionsTable().catch(console.error);
+} else {
+  console.log('📝 Using memory session store (development mode)');
+  sessionStore = new session.MemoryStore();
+}
 
 // Session configuration
 app.use(session({
