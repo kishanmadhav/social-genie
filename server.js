@@ -107,30 +107,41 @@ class SupabaseSessionStore extends session.Store {
 
   async get(sid, callback) {
     try {
+      console.log('📖 Getting session:', sid);
       const { data, error } = await database.getSupabaseClient()
         .from('oauth_sessions')
         .select('data, expires_at')
         .eq('sid', sid)
         .single();
 
-      if (error || !data) {
+      if (error) {
+        console.log('❌ Session get error:', error);
+        return callback(null, null);
+      }
+
+      if (!data) {
+        console.log('⚠️ No session data found for:', sid);
         return callback(null, null);
       }
 
       // Check if session expired
       if (new Date(data.expires_at) < new Date()) {
+        console.log('⏰ Session expired, destroying:', sid);
         await this.destroy(sid, () => {});
         return callback(null, null);
       }
 
+      console.log('✅ Session retrieved successfully:', sid);
       callback(null, JSON.parse(data.data));
     } catch (err) {
+      console.error('💥 Session get exception:', err);
       callback(err);
     }
   }
 
   async set(sid, session, callback) {
     try {
+      console.log('💾 Setting session:', sid, 'Data:', Object.keys(session));
       const expires_at = new Date(Date.now() + this.ttl * 1000).toISOString();
       
       const { error } = await database.getSupabaseClient()
@@ -141,21 +152,36 @@ class SupabaseSessionStore extends session.Store {
           expires_at
         });
 
+      if (error) {
+        console.error('❌ Session set error:', error);
+      } else {
+        console.log('✅ Session saved successfully:', sid);
+      }
+
       callback(error);
     } catch (err) {
+      console.error('💥 Session set exception:', err);
       callback(err);
     }
   }
 
   async destroy(sid, callback) {
     try {
+      console.log('🗑️ Destroying session:', sid);
       const { error } = await database.getSupabaseClient()
         .from('oauth_sessions')
         .delete()
         .eq('sid', sid);
 
+      if (error) {
+        console.error('❌ Session destroy error:', error);
+      } else {
+        console.log('✅ Session destroyed successfully:', sid);
+      }
+
       callback(error);
     } catch (err) {
+      console.error('💥 Session destroy exception:', err);
       callback(err);
     }
   }
@@ -163,11 +189,18 @@ class SupabaseSessionStore extends session.Store {
 
 // Session store configuration
 let sessionStore;
-if (process.env.NODE_ENV === 'production') {
-  console.log('🔄 Using Supabase session store for production');
-  sessionStore = new SupabaseSessionStore({ ttl: 24 * 60 * 60 }); // 24 hours
-} else {
-  console.log('📝 Using memory session store (development mode)');
+try {
+  if (process.env.NODE_ENV === 'production') {
+    console.log('🔄 Attempting Supabase session store for production');
+    sessionStore = new SupabaseSessionStore({ ttl: 24 * 60 * 60 }); // 24 hours
+    console.log('✅ Supabase session store initialized');
+  } else {
+    console.log('📝 Using memory session store (development mode)');
+    sessionStore = new session.MemoryStore();
+  }
+} catch (error) {
+  console.error('❌ Failed to initialize session store:', error);
+  console.log('⚠️ Falling back to memory store');
   sessionStore = new session.MemoryStore();
 }
 
