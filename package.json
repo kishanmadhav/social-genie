@@ -30,6 +30,7 @@
     "passport-google-oauth20": "^2.0.0",
     "passport-instagram": "^1.0.0",
     "passport-twitter": "^1.0.4",
+    "passport-twitter-oauth2": "^2.1.1",
     "pg": "^8.16.3",
     "twitter-api-v2": "^1.15.0",
     "uuid": "^9.0.1"

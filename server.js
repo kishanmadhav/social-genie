@@ -3,7 +3,7 @@ const express = require('express');
 const session = require('express-session');
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const TwitterStrategy = require('passport-twitter').Strategy;
+const TwitterStrategy = require('passport-twitter-oauth2').Strategy;
 const FacebookStrategy = require('passport-facebook').Strategy;
 const { TwitterApi } = require('twitter-api-v2');
 const multer = require('multer');
@@ -254,13 +254,14 @@ passport.use(new GoogleStrategy({
   }
 }));
 
-// Passport Twitter Strategy (Secondary Authorization)
+// Passport Twitter OAuth 2.0 Strategy (Secondary Authorization)
 passport.use('twitter-link', new TwitterStrategy({
-  consumerKey: process.env.TWITTER_API_KEY,
-  consumerSecret: process.env.TWITTER_API_SECRET,
+  clientID: process.env.TWITTER_CLIENT_ID,
+  clientSecret: process.env.TWITTER_CLIENT_SECRET,
   callbackURL: process.env.TWITTER_CALLBACK_URL || "http://localhost:3000/auth/twitter/callback",
-  passReqToCallback: true
-}, async (req, token, tokenSecret, profile, done) => {
+  passReqToCallback: true,
+  clientType: 'confidential'
+}, async (req, accessToken, refreshToken, profile, done) => {
   try {
     // Get current user from session (must be logged in with Google)
     const currentUser = req.user;
@@ -269,7 +270,12 @@ passport.use('twitter-link', new TwitterStrategy({
     }
 
     // Link Twitter account to current user
-    await database.linkTwitterAccount(currentUser.id, profile, { token, tokenSecret });
+    // Note: OAuth 2.0 uses accessToken and refreshToken instead of token/tokenSecret
+    await database.linkTwitterAccount(currentUser.id, profile, { 
+      accessToken, 
+      refreshToken,
+      tokenType: 'oauth2'
+    });
     
     return done(null, { success: true, twitterProfile: profile });
   } catch (error) {
@@ -402,8 +408,12 @@ app.get('/auth/google/callback',
   }
 );
 
-// Twitter OAuth (Secondary Authorization)
-app.get('/auth/twitter', passport.authenticate('twitter-link'));
+// Twitter OAuth 2.0 (Secondary Authorization)
+app.get('/auth/twitter', 
+  passport.authenticate('twitter-link', {
+    scope: ['tweet.read', 'tweet.write', 'users.read', 'offline.access']
+  })
+);
 
 app.get('/auth/twitter/callback',
   passport.authenticate('twitter-link', { failureRedirect: `${FRONTEND_URL}/connect?error=twitter_auth_failed` }),

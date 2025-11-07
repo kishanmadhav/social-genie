@@ -9,18 +9,7 @@ CREATE TABLE IF NOT EXISTS oauth_sessions (
 -- Create index for efficient cleanup of expired sessions
 CREATE INDEX IF NOT EXISTS idx_oauth_sessions_expires_at ON oauth_sessions(expires_at);
 
--- Grant necessary permissions
-ALTER TABLE oauth_sessions ENABLE ROW LEVEL SECURITY;
-
--- Drop existing policy if it exists, then create new one
-DROP POLICY IF EXISTS "Service role can manage oauth sessions" ON oauth_sessions;
-
--- Allow the service role to manage sessions
-CREATE POLICY "Service role can manage oauth sessions"
-ON oauth_sessions
-FOR ALL
-TO service_role
-USING (true)
-WITH CHECK (true);
+-- DISABLE Row Level Security to allow service role full access
+ALTER TABLE oauth_sessions DISABLE ROW LEVEL SECURITY;
 
 SELECT 'OAuth sessions table created successfully!' as message;
