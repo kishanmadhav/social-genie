@@ -41,9 +41,24 @@ export async function POST(req: NextRequest) {
 
     const userId = (session.user as any).id;
 
+    if (!userId) {
+      return NextResponse.json({ 
+        error: 'User ID not found in session. Please log out and log in again.' 
+      }, { status: 422 });
+    }
+
     // Check generation limits
-    const userPlan = await database.getUserPlan(userId);
-    const monthlyCount = await database.getMonthlyGenerationCount(userId);
+    let userPlan, monthlyCount;
+    try {
+      userPlan = await database.getUserPlan(userId);
+      monthlyCount = await database.getMonthlyGenerationCount(userId);
+    } catch (dbError) {
+      console.error('Database error:', dbError);
+      return NextResponse.json({ 
+        error: 'Database configuration error. Please ensure all environment variables are set.',
+        details: dbError instanceof Error ? dbError.message : 'Unknown database error'
+      }, { status: 500 });
+    }
     
     const limits: Record<string, number> = {
       standard: 0,
