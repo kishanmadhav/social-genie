@@ -108,6 +108,11 @@ app.use(helmet({
   },
 }));
 
+// Trust proxy for production (Railway, Heroku, etc.)
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
