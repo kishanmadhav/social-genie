@@ -1646,12 +1646,17 @@ app.use((req, res) => {
 
 // Start server with detailed logging
 const server = app.listen(PORT, () => {
+  // Debug: check what database actually is
+  const dbStatus = (database && typeof database.isInitialized === 'function') 
+    ? (database.isInitialized() ? '✓ Connected' : '✗ Not Initialized')
+    : '✗ Error loading database';
+  
   console.log('========================================');
   console.log('🚀 Social Genie Server Starting');
   console.log('========================================');
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`Port: ${PORT}`);
-  console.log(`Database: ${database.isInitialized() ? '✓ Connected' : '✗ Not Initialized'}`);
+  console.log(`Database: ${dbStatus}`);
   console.log(`URL: ${process.env.NODE_ENV === 'production' ? 'https://your-domain.com' : `http://localhost:${PORT}`}`);
   console.log('Health Check: GET /health');
   console.log('========================================');
