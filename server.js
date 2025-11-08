@@ -1611,7 +1611,7 @@ app.get('/health', (req, res) => {
     status: 'ok',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
-    database: database.isInitialized ? 'connected' : 'disconnected'
+    database: database.isInitialized && database.isInitialized() ? 'connected' : 'disconnected'
   });
 });
 
