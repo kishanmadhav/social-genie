@@ -670,5 +670,10 @@ class DatabaseService {
   }
 }
 
-module.exports = new DatabaseService();
-
+// Debug: log before creating instance
+console.log('\n[DATABASE] DatabaseService class defined, creating instance...');
+const dbInstance = new DatabaseService();
+console.log('[DATABASE] DatabaseService instance created');
+console.log('[DATABASE] Instance has isInitialized method:', typeof dbInstance.isInitialized === 'function');
+console.log('[DATABASE] Instance has testConnection method:', typeof dbInstance.testConnection === 'function');
+module.exports = dbInstance;
