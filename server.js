@@ -1606,12 +1606,27 @@ app.get(['/dashboard', '/link-accounts', '/link-twitter', '/link-instagram'], (r
 });
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+app.get('/health', async (req, res) => {
+  let dbStatus = 'disconnected';
+  
+  // Try to verify database connection
+  try {
+    const dbTest = await database.testConnection();
+    if (dbTest.connected) {
+      dbStatus = 'connected';
+    } else {
+      dbStatus = 'error: ' + (dbTest.error || 'unknown error');
+    }
+  } catch (err) {
+    console.error('Database health check error:', err.message);
+    dbStatus = 'error: ' + err.message;
+  }
+  
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
-    database: database.isInitialized && database.isInitialized() ? 'connected' : 'disconnected'
+    database: dbStatus
   });
 });
 
