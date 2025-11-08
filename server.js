@@ -1651,7 +1651,7 @@ const server = app.listen(PORT, () => {
   console.log('========================================');
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`Port: ${PORT}`);
-  console.log(`Database: ${database.isInitialized ? '✓ Connected' : '✗ Not Initialized'}`);
+  console.log(`Database: ${database.isInitialized() ? '✓ Connected' : '✗ Not Initialized'}`);
   console.log(`URL: ${process.env.NODE_ENV === 'production' ? 'https://your-domain.com' : `http://localhost:${PORT}`}`);
   console.log('Health Check: GET /health');
   console.log('========================================');
