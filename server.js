@@ -11,6 +11,15 @@ const path = require('path');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+
+// Console startup info BEFORE importing database
+console.log('\n========================================');
+console.log('🚀 Social Genie Backend Starting...');
+console.log('========================================');
+console.log('Node.js v' + process.version);
+console.log('Environment: ' + (process.env.NODE_ENV || 'development'));
+console.log('========================================\n');
+
 const database = require('./database');
 const fetch = require('node-fetch');
 const { Readable } = require('stream');
@@ -29,8 +38,17 @@ const requiredEnvVars = [
 
 const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
 if (missingEnvVars.length > 0) {
-  console.error('ERROR: Missing required environment variables:');
-  missingEnvVars.forEach(envVar => console.error(`  - ${envVar}`));
+  console.error('========================================');
+  console.error('❌ ERROR: Missing required environment variables:');
+  console.error('========================================');
+  missingEnvVars.forEach(envVar => {
+    console.error(`  ✗ ${envVar}`);
+  });
+  console.error('========================================');
+  console.error('Please add these variables in Railway Dashboard:');
+  console.error('Settings > Variables');
+  console.error('========================================\n');
+  
   if (process.env.NODE_ENV === 'production') {
     console.error('Application cannot start without required environment variables.');
     process.exit(1);
@@ -48,6 +66,7 @@ const s3Client = new S3Client({
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || ''
   }
 });
+
 
 // Helper function to upload image to S3
 async function uploadToS3(imageBuffer, contentType = 'image/png') {
