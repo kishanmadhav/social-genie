@@ -12,6 +12,38 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Database operations
 class DatabaseService {
+
+  constructor() {
+    this.supabase = supabase;
+  }
+
+  // Check if database is initialized
+  isInitialized() {
+    return this.supabase !== null;
+  }
+
+  // Test database connection
+  async testConnection() {
+    try {
+      if (!this.isInitialized()) {
+        return { connected: false, error: 'Database client not initialized' };
+      }
+      
+      // Try a simple query
+      const { data, error } = await this.supabase
+        .from('users')
+        .select('id')
+        .limit(1);
+      
+      if (error) {
+        return { connected: false, error: error.message };
+      }
+      
+      return { connected: true, error: null };
+    } catch (error) {
+      return { connected: false, error: error.message };
+    }
+  }
   
   // User management
   async createOrUpdateUser(googleProfile) {
