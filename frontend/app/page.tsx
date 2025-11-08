@@ -3,8 +3,6 @@
 import Link from "next/link"
 import { ChartBarIcon, CalendarIcon, CheckCircleIcon, SparklesIcon } from "@heroicons/react/24/outline"
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
-
 const features = [
   {
     name: "AI Content Generation",
@@ -37,7 +35,7 @@ const platformInfo = [
 
 export default function LandingPage() {
   const handleLogin = () => {
-    window.location.href = `${API_URL}/auth/google`
+    window.location.href = 'http://localhost:3000/auth/google'
   }
 
   return (

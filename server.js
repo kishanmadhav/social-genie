@@ -3,7 +3,7 @@ const express = require('express');
 const session = require('express-session');
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const TwitterStrategy = require('passport-twitter-oauth2').Strategy;
+const TwitterStrategy = require('passport-twitter').Strategy;
 const FacebookStrategy = require('passport-facebook').Strategy;
 const { TwitterApi } = require('twitter-api-v2');
 const multer = require('multer');
@@ -12,27 +12,49 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const database = require('./database');
-require('dotenv').config();
 const fetch = require('node-fetch');
 const { Readable } = require('stream');
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const crypto = require('crypto');
 
+// Validate required environment variables
+const requiredEnvVars = [
+  'GOOGLE_CLIENT_ID',
+  'GOOGLE_CLIENT_SECRET',
+  'GOOGLE_CALLBACK_URL',
+  'SUPABASE_URL',
+  'SUPABASE_SERVICE_ROLE_KEY',
+  'SESSION_SECRET'
+];
+
+const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
+if (missingEnvVars.length > 0) {
+  console.error('ERROR: Missing required environment variables:');
+  missingEnvVars.forEach(envVar => console.error(`  - ${envVar}`));
+  if (process.env.NODE_ENV === 'production') {
+    console.error('Application cannot start without required environment variables.');
+    process.exit(1);
+  }
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3001';
 
-// Configure AWS S3 Client
+// Configure AWS S3 Client with validation
 const s3Client = new S3Client({
   region: process.env.AWS_REGION || 'us-east-1',
   credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || ''
   }
 });
 
 // Helper function to upload image to S3
 async function uploadToS3(imageBuffer, contentType = 'image/png') {
+  if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
+    throw new Error('AWS S3 credentials not configured');
+  }
+
   const fileName = `social-genie/${crypto.randomBytes(16).toString('hex')}.png`;
   
   const command = new PutObjectCommand({
@@ -76,21 +98,8 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // CORS configuration - Allow both backend and frontend origins
-const allowedOrigins = [
-  'http://localhost:3000', 
-  'http://localhost:3001',
-  FRONTEND_URL,
-  'https://sm-genie-11byg4qpm-kishan-madhavs-projects-1f348ecf.vercel.app',
-  'https://sm-genie-58hjnnlio-kishan-madhavs-projects-1f348ecf.vercel.app',
-  'https://sm-genie-995j7tkdx-kishan-madhavs-projects-1f348ecf.vercel.app',
-  'https://sm-genie-hyl8sqlbu-kishan-madhavs-projects-1f348ecf.vercel.app',
-  'https://frontend-jwjywlmp9-kishan-madhavs-projects-1f348ecf.vercel.app',
-  'https://frontend-7t5u541xf-kishan-madhavs-projects-1f348ecf.vercel.app',
-  'https://frontend-eight-pied-40.vercel.app'
-].filter((origin, index, self) => origin && self.indexOf(origin) === index); // Remove duplicates and empty values
-
 app.use(cors({
-  origin: allowedOrigins,
+  origin: ['http://localhost:3000', 'http://localhost:3001'],
   credentials: true
 }));
 
@@ -98,22 +107,15 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Session store configuration - Use memory store for simplicity
-// Twitter OAuth 2.0 doesn't need persistent sessions anyway
-let sessionStore = new session.MemoryStore();
-console.log('📝 Using memory session store');
-
 // Session configuration
 app.use(session({
-  store: sessionStore,
   secret: process.env.SESSION_SECRET || 'fallback-secret-change-in-production',
   resave: false,
   saveUninitialized: false,
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax' // Required for cross-site OAuth
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
 }));
 
@@ -153,16 +155,13 @@ passport.use(new GoogleStrategy({
   }
 }));
 
-// Passport Twitter OAuth 2.0 Strategy (Secondary Authorization)
+// Passport Twitter Strategy (Secondary Authorization)
 passport.use('twitter-link', new TwitterStrategy({
-  clientID: process.env.TWITTER_CLIENT_ID,
-  clientSecret: process.env.TWITTER_CLIENT_SECRET,
+  consumerKey: process.env.TWITTER_API_KEY,
+  consumerSecret: process.env.TWITTER_API_SECRET,
   callbackURL: process.env.TWITTER_CALLBACK_URL || "http://localhost:3000/auth/twitter/callback",
-  passReqToCallback: true,
-  authorizationURL: 'https://twitter.com/i/oauth2/authorize',
-  tokenURL: 'https://api.twitter.com/2/oauth2/token',
-  scope: ['tweet.read', 'tweet.write', 'users.read', 'offline.access']
-}, async (req, accessToken, refreshToken, profile, done) => {
+  passReqToCallback: true
+}, async (req, token, tokenSecret, profile, done) => {
   try {
     // Get current user from session (must be logged in with Google)
     const currentUser = req.user;
@@ -171,12 +170,7 @@ passport.use('twitter-link', new TwitterStrategy({
     }
 
     // Link Twitter account to current user
-    // Note: OAuth 2.0 uses accessToken and refreshToken instead of token/tokenSecret
-    await database.linkTwitterAccount(currentUser.id, profile, { 
-      accessToken, 
-      refreshToken,
-      tokenType: 'oauth2'
-    });
+    await database.linkTwitterAccount(currentUser.id, profile, { token, tokenSecret });
     
     return done(null, { success: true, twitterProfile: profile });
   } catch (error) {
@@ -264,24 +258,13 @@ passport.deserializeUser((user, done) => {
   done(null, user);
 });
 
-// Serve static files (only in development)
-if (process.env.NODE_ENV !== 'production') {
-  app.use(express.static('public'));
-  
-  // Routes for SPA
-  app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-  });
-  
-  app.get(['/dashboard', '/link-accounts', '/link-twitter', '/link-instagram'], (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-  });
-} else {
-  // In production, redirect root to frontend
-  app.get('/', (req, res) => {
-    res.redirect(FRONTEND_URL || 'https://frontend-jwjywlmp9-kishan-madhavs-projects-1f348ecf.vercel.app');
-  });
-}
+// Serve static files
+app.use(express.static('public'));
+
+// Routes
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 // Authentication routes
 // Google OAuth (Primary Authentication)
@@ -291,31 +274,26 @@ app.get('/auth/google', passport.authenticate('google', {
 }));
 
 app.get('/auth/google/callback',
-  passport.authenticate('google', { failureRedirect: `${FRONTEND_URL}/?error=auth_failed` }),
+  passport.authenticate('google', { failureRedirect: 'http://localhost:3001/?error=auth_failed' }),
   async (req, res) => {
-    try {
-      // Check if user has completed onboarding (has brand profile)
-      const brandProfile = await database.getBrandProfile(req.user.id);
-      
-      if (brandProfile) {
-        res.redirect(`${FRONTEND_URL}/dashboard`);
-      } else {
-        res.redirect(`${FRONTEND_URL}/onboarding`);
-      }
-    } catch (error) {
-      console.error('OAuth callback error:', error);
-      res.redirect(`${FRONTEND_URL}/?error=callback_failed`);
+    // Check if user has completed onboarding (has brand profile)
+    const brandProfile = await database.getBrandProfile(req.user.id);
+    
+    if (brandProfile) {
+      res.redirect('http://localhost:3001/dashboard');
+    } else {
+      res.redirect('http://localhost:3001/onboarding');
     }
   }
 );
 
-// Twitter OAuth 2.0 (Secondary Authorization)
+// Twitter OAuth (Secondary Authorization)
 app.get('/auth/twitter', passport.authenticate('twitter-link'));
 
 app.get('/auth/twitter/callback',
-  passport.authenticate('twitter-link', { failureRedirect: `${FRONTEND_URL}/connect?error=twitter_auth_failed` }),
+  passport.authenticate('twitter-link', { failureRedirect: 'http://localhost:3001/connect?error=twitter_auth_failed' }),
   (req, res) => {
-    res.redirect(`${FRONTEND_URL}/connect?twitter_linked=true`);
+    res.redirect('http://localhost:3001/connect?twitter_linked=true');
   }
 );
 
@@ -327,9 +305,9 @@ app.get('/auth/facebook',
 );
 
 app.get('/auth/facebook/callback',
-  passport.authenticate('facebook-link', { failureRedirect: `${FRONTEND_URL}/connect?error=facebook_auth_failed` }),
+  passport.authenticate('facebook-link', { failureRedirect: 'http://localhost:3001/connect?error=facebook_auth_failed' }),
   (req, res) => {
-    res.redirect(`${FRONTEND_URL}/connect?facebook_linked=true`);
+    res.redirect('http://localhost:3001/connect?facebook_linked=true');
   }
 );
 
@@ -1598,16 +1576,27 @@ app.get('/api/analytics/:platform', async (req, res) => {
   }
 });
 
+// SPA routes
+app.get(['/dashboard', '/link-accounts', '/link-twitter', '/link-instagram'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    database: database.isInitialized ? 'connected' : 'disconnected'
+  });
+});
+
 // Error handling middleware
 app.use((error, req, res, next) => {
   console.error('Server error:', error);
-  console.error('Error stack:', error.stack);
-  console.error('Request URL:', req.url);
-  console.error('Request method:', req.method);
   res.status(500).json({
     error: 'Internal server error',
-    message: error.message || 'Something went wrong',
-    ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
+    message: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
   });
 });
 
@@ -1616,65 +1605,32 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-// Test Supabase connection endpoint
-app.get('/api/test-supabase', async (req, res) => {
-  try {
-    console.log('🔄 Testing Supabase connection...');
-    
-    // Check environment variables
-    const hasSupabaseUrl = !!process.env.SUPABASE_URL;
-    const hasSupabaseKey = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
-    
-    console.log('SUPABASE_URL present:', hasSupabaseUrl);
-    console.log('SUPABASE_SERVICE_ROLE_KEY present:', hasSupabaseKey);
-    
-    if (!hasSupabaseUrl || !hasSupabaseKey) {
-      return res.status(500).json({
-        success: false,
-        error: 'Missing Supabase environment variables',
-        details: {
-          hasSupabaseUrl,
-          hasSupabaseKey,
-          supabaseUrlLength: process.env.SUPABASE_URL?.length || 0,
-          supabaseKeyLength: process.env.SUPABASE_SERVICE_ROLE_KEY?.length || 0
-        }
-      });
-    }
-
-    // Test database connection using database service
-    const result = await database.testConnection();
-    
-    console.log('✅ Supabase connection test successful');
-    console.log('Users count:', result.usersCount);
-
-    res.json({
-      success: true,
-      message: 'Supabase connection working perfectly!',
-      ...result,
-      environmentVariables: {
-        hasSupabaseUrl,
-        hasSupabaseKey,
-        supabaseUrlHost: process.env.SUPABASE_URL?.split('//')[1]?.split('.')[0] || 'unknown'
-      }
-    });
-  } catch (error) {
-    console.error('❌ Supabase connection test error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
-      timestamp: new Date().toISOString()
-    });
-  }
+// Start server with detailed logging
+const server = app.listen(PORT, () => {
+  console.log('========================================');
+  console.log('🚀 Social Genie Server Starting');
+  console.log('========================================');
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`Port: ${PORT}`);
+  console.log(`Database: ${database.isInitialized ? '✓ Connected' : '✗ Not Initialized'}`);
+  console.log(`URL: ${process.env.NODE_ENV === 'production' ? 'https://your-domain.com' : `http://localhost:${PORT}`}`);
+  console.log('Health Check: GET /health');
+  console.log('========================================');
 });
 
-// For local development
-if (process.env.NODE_ENV !== 'production') {
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log(`Visit http://localhost:${PORT} to access the application`);
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully...');
+  server.close(() => {
+    console.log('Server closed');
+    process.exit(0);
   });
-}
+});
 
-// Export for Vercel
-module.exports = app;
+process.on('SIGINT', () => {
+  console.log('SIGINT received, shutting down gracefully...');
+  server.close(() => {
+    console.log('Server closed');
+    process.exit(0);
+  });
+});

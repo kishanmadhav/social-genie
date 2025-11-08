@@ -16,7 +16,7 @@ class DatabaseService {
   // User management
   async createOrUpdateUser(googleProfile) {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await this.supabase
         .from('users')
         .upsert({
           google_id: googleProfile.id,
@@ -40,7 +40,7 @@ class DatabaseService {
 
   async getUserByGoogleId(googleId) {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await this.supabase
         .from('users')
         .select('*')
         .eq('google_id', googleId)
@@ -57,7 +57,7 @@ class DatabaseService {
   // Twitter account linking
   async linkTwitterAccount(userId, twitterProfile, tokens) {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await this.supabase
         .from('twitter_accounts')
         .upsert({
           user_id: userId,
@@ -83,7 +83,7 @@ class DatabaseService {
 
   async getTwitterAccount(userId) {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await this.supabase
         .from('twitter_accounts')
         .select('*')
         .eq('user_id', userId)
@@ -100,7 +100,7 @@ class DatabaseService {
   // Instagram account linking
   async linkInstagramAccount(userId, instagramProfile, tokens) {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await this.supabase
         .from('instagram_accounts')
         .upsert({
           user_id: userId,
@@ -125,7 +125,7 @@ class DatabaseService {
 
   async getInstagramAccount(userId) {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await this.supabase
         .from('instagram_accounts')
         .select('*')
         .eq('user_id', userId)
@@ -150,7 +150,7 @@ class DatabaseService {
 
   async unlinkInstagramAccount(userId) {
     try {
-      const { error } = await supabase
+      const { error } = await this.supabase
         .from('instagram_accounts')
         .delete()
         .eq('user_id', userId);
@@ -166,7 +166,7 @@ class DatabaseService {
   // Facebook account linking (for Instagram Graph API)
   async linkFacebookAccount(userId, facebookData) {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await this.supabase
         .from('facebook_accounts')
         .upsert({
           user_id: userId,
@@ -191,7 +191,7 @@ class DatabaseService {
 
   async getFacebookAccount(userId) {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await this.supabase
         .from('facebook_accounts')
         .select('*')
         .eq('user_id', userId)
@@ -210,7 +210,7 @@ class DatabaseService {
 
   async unlinkFacebookAccount(userId) {
     try {
-      const { error } = await supabase
+      const { error } = await this.supabase
         .from('facebook_accounts')
         .delete()
         .eq('user_id', userId);
@@ -226,7 +226,7 @@ class DatabaseService {
   // Instagram post management
   async saveInstagramPost(userId, postData) {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await this.supabase
         .from('instagram_posts')
         .insert({
           user_id: userId,
@@ -251,7 +251,7 @@ class DatabaseService {
 
   async getUserInstagramPosts(userId, limit = 10) {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await this.supabase
         .from('instagram_posts')
         .select('*')
         .eq('user_id', userId)
@@ -269,7 +269,7 @@ class DatabaseService {
   // Facebook post management
   async saveFacebookPost(userId, postData) {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await this.supabase
         .from('facebook_posts')
         .insert({
           user_id: userId,
@@ -292,7 +292,7 @@ class DatabaseService {
 
   async getUserFacebookPosts(userId, limit = 10) {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await this.supabase
         .from('facebook_posts')
         .select('*')
         .eq('user_id', userId)
@@ -309,7 +309,7 @@ class DatabaseService {
 
   async unlinkTwitterAccount(userId) {
     try {
-      const { error } = await supabase
+      const { error } = await this.supabase
         .from('twitter_accounts')
         .delete()
         .eq('user_id', userId);
@@ -325,7 +325,7 @@ class DatabaseService {
   // Tweet management
   async saveTweet(userId, tweetData) {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await this.supabase
         .from('tweets')
         .insert({
           user_id: userId,
@@ -347,7 +347,7 @@ class DatabaseService {
 
   async getUserTweets(userId, limit = 10) {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await this.supabase
         .from('tweets')
         .select('*')
         .eq('user_id', userId)
@@ -365,7 +365,7 @@ class DatabaseService {
   // Analytics
   async getUserStats(userId) {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await this.supabase
         .from('tweets')
         .select('twitter_tweet_id, posted_at')
         .eq('user_id', userId);
@@ -393,7 +393,7 @@ class DatabaseService {
   // Brand Profile management
   async saveBrandProfile(userId, profileData) {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await this.supabase
         .from('brand_profiles')
         .upsert({
           user_id: userId,
@@ -420,7 +420,7 @@ class DatabaseService {
 
   async getBrandProfile(userId) {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await this.supabase
         .from('brand_profiles')
         .select('*')
         .eq('user_id', userId)
@@ -437,7 +437,7 @@ class DatabaseService {
   // Scheduled Posts management
   async createScheduledPost(userId, postData) {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await this.supabase
         .from('scheduled_posts')
         .insert({
           user_id: userId,
@@ -486,7 +486,7 @@ class DatabaseService {
 
   async updateScheduledPostStatus(postId, status) {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await this.supabase
         .from('scheduled_posts')
         .update({ status: status, posted_at: status === 'posted' ? new Date().toISOString() : null })
         .eq('id', postId)
@@ -503,7 +503,7 @@ class DatabaseService {
 
   async deleteScheduledPost(postId) {
     try {
-      const { error } = await supabase
+      const { error } = await this.supabase
         .from('scheduled_posts')
         .delete()
         .eq('id', postId);
@@ -519,7 +519,7 @@ class DatabaseService {
   // Post Generations tracking
   async trackPostGeneration(userId, generationType = 'ai') {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await this.supabase
         .from('post_generations')
         .insert({
           user_id: userId,
@@ -541,7 +541,7 @@ class DatabaseService {
       const now = new Date();
       const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
       
-      const { data, error } = await supabase
+      const { data, error } = await this.supabase
         .from('post_generations')
         .select('id', { count: 'exact' })
         .eq('user_id', userId)
@@ -557,7 +557,7 @@ class DatabaseService {
 
   async getUserPlan(userId) {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await this.supabase
         .from('users')
         .select('plan')
         .eq('id', userId)
@@ -671,3 +671,4 @@ class DatabaseService {
 }
 
 module.exports = new DatabaseService();
+
