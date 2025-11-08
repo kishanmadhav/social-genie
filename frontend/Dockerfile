@@ -28,7 +28,9 @@ RUN npm ci --omit=dev
 
 # Copy built application from builder
 COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
+
+# Copy public directory if it exists
+RUN if [ -d /app/public ]; then cp -r /app/public ./public; fi
 
 # Set environment variables
 ENV NODE_ENV=production
