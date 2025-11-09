@@ -35,16 +35,25 @@
    - Wait for build to complete (~2-3 minutes)
    - Once deployed, Railway will provide a URL like `https://frontend-xxxx.up.railway.app`
 
-### Option 2: Deploy via Railway CLI
+### Option 2: Deploy via Railway CLI (Advanced)
 
+⚠️ **WARNING**: The Railway CLI `railway up` deploys to the currently linked service. Using this from the frontend directory will overwrite the backend service!
+
+**For proper CLI deployment, use the Railway Dashboard (Option 1) or create a new service via the web UI first.**
+
+If you must use CLI:
 ```bash
+# This approach requires creating a new Railway service first in the dashboard
+# Then linking to it from the frontend directory
+
 cd c:\sm-genie\frontend
 
-# Link to the existing Railway project
+# Link to a NEW frontend service in the same project (must exist in Railway dashboard first)
 railway link
 
 # Select workspace: "Kishan Madhav Ag's Projects"
 # Select project: "successful-purpose"
+# SELECT THE NEW FRONTEND SERVICE (not social-genie)
 
 # Set environment variable
 railway variables add NEXT_PUBLIC_API_URL https://social-genie-production.up.railway.app
