@@ -636,4 +636,5 @@ If you encounter any issues:
 This application is for educational and personal use. Make sure to comply with Twitter's Terms of Service and API usage policies. The developers are not responsible for any misuse of this application.
 #   s o c i a l - g e n i e 
  
+ #   T r i g g e r   f r o n t e n d   r e b u i l d  
  
