@@ -1,0 +1,30 @@
+[build]
+  base = "frontend"
+  command = "npm run build"
+  publish = ".next"
+  functions = "../netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "18"
+  NPM_VERSION = "9"
+
+# API redirects to serverless functions
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api"
+  status = 200
+
+# SPA routing - redirect all routes to Next.js
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Environment variables for deployment
+[env.production]
+  [env.production.context.environment]
+    NODE_ENV = "production"
+
+[env.development]
+  [env.development.context.environment]
+    NODE_ENV = "development"
