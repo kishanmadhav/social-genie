@@ -8,25 +8,13 @@
   NODE_VERSION = "18"
   NPM_VERSION = "9"
 
-# API redirects
+# API routes to serverless functions
 [[redirects]]
   from = "/api/*"
-  to = "/.netlify/functions/api"
+  to = "/.netlify/functions/api:splat"
   status = 200
 
-# Next.js Image Optimization
-[[redirects]]
-  from = "/_next/image"
-  to = "/.netlify/functions/image-handler"
-  status = 200
-
-# Static files
-[[redirects]]
-  from = "/_next/static/*"
-  to = "/_next/static/:splat"
-  status = 200
-
-# Catch-all for SPA routing
+# Catch-all SPA routing - send all requests to Next.js
 [[redirects]]
   from = "/*"
   to = "/index.html"
