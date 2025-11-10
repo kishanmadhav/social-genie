@@ -13,6 +13,9 @@ COPY server.js .
 COPY database.js .
 COPY index.js .
 
+# Copy public directory
+COPY public ./public
+
 # Expose port
 EXPOSE 3000
 
