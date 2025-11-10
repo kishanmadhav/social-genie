@@ -1,12 +1,8 @@
 [build]
-  # Keep base at root to access both frontend and netlify/functions
-  base = "."
-  # Build frontend from root
-  command = "cd frontend && npm run build"
-  # Publish the Next.js output
-  publish = "frontend/.next"
-  # Functions directory for backend API
-  functions = "netlify/functions"
+  base = "frontend"
+  command = "npm run build"
+  publish = ".next"
+  functions = "../netlify/functions"
 
 [build.environment]
   NODE_VERSION = "18"
@@ -23,12 +19,3 @@
   from = "/*"
   to = "/index.html"
   status = 200
-
-# Environment variables for deployment
-[env.production]
-  [env.production.context.environment]
-    NODE_ENV = "production"
-
-[env.development]
-  [env.development.context.environment]
-    NODE_ENV = "development"

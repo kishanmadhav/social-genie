@@ -11,69 +11,27 @@ const path = require('path');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-
-// Console startup info BEFORE importing database
-console.log('\n========================================');
-console.log('🚀 Social Genie Backend Starting...');
-console.log('========================================');
-console.log('Node.js v' + process.version);
-console.log('Environment: ' + (process.env.NODE_ENV || 'development'));
-console.log('========================================\n');
-
 const database = require('./database');
+require('dotenv').config();
 const fetch = require('node-fetch');
 const { Readable } = require('stream');
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const crypto = require('crypto');
 
-// Validate required environment variables
-const requiredEnvVars = [
-  'GOOGLE_CLIENT_ID',
-  'GOOGLE_CLIENT_SECRET',
-  'GOOGLE_CALLBACK_URL',
-  'SUPABASE_URL',
-  'SUPABASE_SERVICE_ROLE_KEY',
-  'SESSION_SECRET'
-];
-
-const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
-if (missingEnvVars.length > 0) {
-  console.error('========================================');
-  console.error('❌ ERROR: Missing required environment variables:');
-  console.error('========================================');
-  missingEnvVars.forEach(envVar => {
-    console.error(`  ✗ ${envVar}`);
-  });
-  console.error('========================================');
-  console.error('Please add these variables in Railway Dashboard:');
-  console.error('Settings > Variables');
-  console.error('========================================\n');
-  
-  if (process.env.NODE_ENV === 'production') {
-    console.error('Application cannot start without required environment variables.');
-    process.exit(1);
-  }
-}
-
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Configure AWS S3 Client with validation
+// Configure AWS S3 Client
 const s3Client = new S3Client({
-  region: process.env.AWS_REGION || 'us-east-1',
+  region: process.env.NETLIFY_AWS_REGION || process.env.AWS_REGION || 'us-east-1',
   credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || ''
+    accessKeyId: process.env.NETLIFY_AWS_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.NETLIFY_AWS_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY
   }
 });
 
-
 // Helper function to upload image to S3
 async function uploadToS3(imageBuffer, contentType = 'image/png') {
-  if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
-    throw new Error('AWS S3 credentials not configured');
-  }
-
   const fileName = `social-genie/${crypto.randomBytes(16).toString('hex')}.png`;
   
   const command = new PutObjectCommand({
@@ -107,11 +65,6 @@ app.use(helmet({
     },
   },
 }));
-
-// Trust proxy for production (Railway, Heroku, etc.)
-if (process.env.NODE_ENV === 'production') {
-  app.set('trust proxy', 1);
-}
 
 // Rate limiting
 const limiter = rateLimit({
@@ -852,7 +805,9 @@ app.post('/api/generate-content', async (req, res) => {
     }
 
     // Check S3 configuration
-    if (!process.env.S3_BUCKET_NAME || !process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
+    const hasAWSCreds = (process.env.NETLIFY_AWS_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID) && 
+                        (process.env.NETLIFY_AWS_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY);
+    if (!process.env.S3_BUCKET_NAME || !hasAWSCreds) {
       return res.status(500).json({ error: 'S3 is not configured. Please add AWS credentials to .env file' });
     }
 
@@ -1605,31 +1560,6 @@ app.get(['/dashboard', '/link-accounts', '/link-twitter', '/link-instagram'], (r
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Health check endpoint
-app.get('/health', async (req, res) => {
-  let dbStatus = 'disconnected';
-  
-  // Try to verify database connection
-  try {
-    const dbTest = await database.testConnection();
-    if (dbTest.connected) {
-      dbStatus = 'connected';
-    } else {
-      dbStatus = 'error: ' + (dbTest.error || 'unknown error');
-    }
-  } catch (err) {
-    console.error('Database health check error:', err.message);
-    dbStatus = 'error: ' + err.message;
-  }
-  
-  res.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development',
-    database: dbStatus
-  });
-});
-
 // Error handling middleware
 app.use((error, req, res, next) => {
   console.error('Server error:', error);
@@ -1644,37 +1574,7 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-// Start server with detailed logging
-const server = app.listen(PORT, () => {
-  // Debug: check what database actually is
-  const dbStatus = (database && typeof database.isInitialized === 'function') 
-    ? (database.isInitialized() ? '✓ Connected' : '✗ Not Initialized')
-    : '✗ Error loading database';
-  
-  console.log('========================================');
-  console.log('🚀 Social Genie Server Starting');
-  console.log('========================================');
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`Port: ${PORT}`);
-  console.log(`Database: ${dbStatus}`);
-  console.log(`URL: ${process.env.NODE_ENV === 'production' ? 'https://your-domain.com' : `http://localhost:${PORT}`}`);
-  console.log('Health Check: GET /health');
-  console.log('========================================');
-});
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received, shutting down gracefully...');
-  server.close(() => {
-    console.log('Server closed');
-    process.exit(0);
-  });
-});
-
-process.on('SIGINT', () => {
-  console.log('SIGINT received, shutting down gracefully...');
-  server.close(() => {
-    console.log('Server closed');
-    process.exit(0);
-  });
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log(`Visit http://localhost:${PORT} to access the application`);
 });
