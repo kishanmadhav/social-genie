@@ -6,6 +6,6 @@
   "variables": {
     "NODE_ENV": "production",
     "PORT": "3000",
-    "NEXT_PUBLIC_API_URL": "${{ secrets.BACKEND_URL }}"
+    "NEXT_PUBLIC_API_URL": "https://social-genie-production.up.railway.app"
   }
 }
