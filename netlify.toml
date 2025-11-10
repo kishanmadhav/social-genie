@@ -1,11 +1,12 @@
 [build]
-  command = "cd frontend && npm ci && npm run build"
+  command = "cd frontend && npm ci --include=dev && npm run build"
   publish = "frontend/out"
   functions = "netlify/functions"
 
 [build.environment]
   NODE_VERSION = "18"
   NPM_VERSION = "9"
+  NODE_ENV = ""
 
 # API routes to serverless functions
 [[redirects]]
