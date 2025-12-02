@@ -230,8 +230,26 @@ export default function Schedule() {
       return
     }
 
-    // Combine date and time into ISO string
-    const scheduledTime = new Date(`${scheduleDate}T${scheduleTime}`).toISOString()
+    // Combine date and time - this creates a Date in the user's local timezone
+    const scheduledDateTime = new Date(`${scheduleDate}T${scheduleTime}`)
+    const now = new Date()
+    
+    // Validate the scheduled time is in the future
+    if (scheduledDateTime <= now) {
+      setToast({ message: 'Scheduled time must be in the future', type: 'error' })
+      return
+    }
+
+    // Warn if scheduling more than 30 days ahead
+    const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
+    if (scheduledDateTime > thirtyDaysFromNow) {
+      if (!confirm('You are scheduling a post more than 30 days in advance. Continue?')) {
+        return
+      }
+    }
+
+    // Convert to ISO string (UTC) for storage
+    const scheduledTime = scheduledDateTime.toISOString()
 
     try {
       await scheduledPostsAPI.createScheduledPost({
@@ -515,6 +533,7 @@ export default function Schedule() {
                     <input
                       type="date"
                       value={scheduleDate}
+                      min={new Date().toISOString().split('T')[0]}
                       onChange={(e) => setScheduleDate(e.target.value)}
                       className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                     />
@@ -528,6 +547,9 @@ export default function Schedule() {
                       className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                     />
                   </div>
+                  <p className="text-xs text-gray-500">
+                    🕐 Your timezone: {Intl.DateTimeFormat().resolvedOptions().timeZone}
+                  </p>
                   <button
                     onClick={handleSchedulePost}
                     disabled={!scheduleDate || !scheduleTime}

@@ -1669,7 +1669,243 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
+// ============================================
+// SCHEDULED POSTS PROCESSOR
+// ============================================
+
+// Process a single scheduled post
+async function processScheduledPost(scheduledPost) {
+  console.log(`[Scheduler] Processing scheduled post ${scheduledPost.id} for user ${scheduledPost.user_id}`);
+  
+  const results = {
+    success: [],
+    failed: []
+  };
+
+  try {
+    // Get user's social accounts
+    const twitterAccount = await database.getTwitterAccount(scheduledPost.user_id);
+    const facebookAccount = await database.getFacebookAccount(scheduledPost.user_id);
+
+    // Download image from S3 if available
+    let imageBuffer = null;
+    if (scheduledPost.s3_url) {
+      try {
+        const response = await fetch(scheduledPost.s3_url);
+        if (response.ok) {
+          imageBuffer = await response.buffer();
+        }
+      } catch (err) {
+        console.error('[Scheduler] Failed to download image:', err.message);
+      }
+    }
+
+    // Process each platform
+    for (const platform of scheduledPost.platforms) {
+      try {
+        if (platform === 'twitter') {
+          if (!twitterAccount) {
+            results.failed.push({ platform: 'twitter', error: 'Account not linked' });
+            continue;
+          }
+
+          const client = new TwitterApi({
+            appKey: process.env.TWITTER_API_KEY,
+            appSecret: process.env.TWITTER_API_SECRET,
+            accessToken: twitterAccount.access_token,
+            accessSecret: twitterAccount.access_token_secret,
+          });
+
+          let tweetOptions = { text: scheduledPost.caption.substring(0, 280) };
+
+          if (imageBuffer) {
+            const mediaId = await client.v1.uploadMedia(imageBuffer, { mimeType: 'image/png' });
+            tweetOptions.media = { media_ids: [mediaId] };
+          }
+
+          const tweet = await client.v2.tweet(tweetOptions);
+          
+          await database.saveTweet(scheduledPost.user_id, {
+            ...tweet.data,
+            s3_url: scheduledPost.s3_url
+          });
+
+          results.success.push({ platform: 'twitter', id: tweet.data.id });
+          console.log(`[Scheduler] Posted to Twitter: ${tweet.data.id}`);
+
+        } else if (platform === 'instagram') {
+          if (!facebookAccount || !facebookAccount.instagram_accounts?.length) {
+            results.failed.push({ platform: 'instagram', error: 'Account not linked' });
+            continue;
+          }
+
+          if (!scheduledPost.s3_url) {
+            results.failed.push({ platform: 'instagram', error: 'Image URL required' });
+            continue;
+          }
+
+          const igAccount = facebookAccount.instagram_accounts[0];
+          const pageAccessToken = igAccount.page_access_token;
+          const igUserId = igAccount.instagram_id;
+
+          // Create container
+          const containerResponse = await fetch(
+            `https://graph.facebook.com/v18.0/${igUserId}/media`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                image_url: scheduledPost.s3_url,
+                caption: scheduledPost.caption,
+                access_token: pageAccessToken
+              })
+            }
+          );
+          const containerData = await containerResponse.json();
+
+          if (!containerData.id) {
+            results.failed.push({ platform: 'instagram', error: containerData.error?.message || 'Container failed' });
+            continue;
+          }
+
+          // Publish
+          const publishResponse = await fetch(
+            `https://graph.facebook.com/v18.0/${igUserId}/media_publish`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                creation_id: containerData.id,
+                access_token: pageAccessToken
+              })
+            }
+          );
+          const publishData = await publishResponse.json();
+
+          if (!publishData.id) {
+            results.failed.push({ platform: 'instagram', error: publishData.error?.message || 'Publish failed' });
+            continue;
+          }
+
+          await database.saveInstagramPost(scheduledPost.user_id, {
+            id: publishData.id,
+            caption: scheduledPost.caption,
+            media_type: 'IMAGE',
+            media_url: scheduledPost.s3_url,
+            permalink: `https://www.instagram.com/p/${publishData.id}/`,
+            is_story: false
+          });
+
+          results.success.push({ platform: 'instagram', id: publishData.id });
+          console.log(`[Scheduler] Posted to Instagram: ${publishData.id}`);
+
+        } else if (platform === 'facebook') {
+          if (!facebookAccount) {
+            results.failed.push({ platform: 'facebook', error: 'Account not linked' });
+            continue;
+          }
+
+          // Get page access token
+          const pagesResponse = await fetch(
+            `https://graph.facebook.com/v18.0/me/accounts?access_token=${facebookAccount.access_token}`
+          );
+          const pagesData = await pagesResponse.json();
+
+          if (!pagesData.data?.length) {
+            results.failed.push({ platform: 'facebook', error: 'No pages found' });
+            continue;
+          }
+
+          const page = pagesData.data[0];
+
+          if (!scheduledPost.s3_url) {
+            results.failed.push({ platform: 'facebook', error: 'Image URL required' });
+            continue;
+          }
+
+          const uploadResponse = await fetch(
+            `https://graph.facebook.com/v18.0/${page.id}/photos`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                url: scheduledPost.s3_url,
+                caption: scheduledPost.caption,
+                published: true,
+                access_token: page.access_token
+              })
+            }
+          );
+          const uploadData = await uploadResponse.json();
+
+          if (!uploadData.id) {
+            results.failed.push({ platform: 'facebook', error: uploadData.error?.message || 'Upload failed' });
+            continue;
+          }
+
+          await database.saveFacebookPost(scheduledPost.user_id, {
+            id: uploadData.id,
+            message: scheduledPost.caption,
+            permalink_url: null,
+            is_story: false
+          });
+
+          results.success.push({ platform: 'facebook', id: uploadData.id });
+          console.log(`[Scheduler] Posted to Facebook: ${uploadData.id}`);
+        }
+      } catch (platformError) {
+        console.error(`[Scheduler] Error posting to ${platform}:`, platformError.message);
+        results.failed.push({ platform, error: platformError.message });
+      }
+    }
+
+    // Update post status
+    if (results.success.length > 0) {
+      await database.updateScheduledPostStatus(scheduledPost.id, 'posted');
+      console.log(`[Scheduler] Post ${scheduledPost.id} marked as posted`);
+    } else {
+      await database.updateScheduledPostStatus(scheduledPost.id, 'failed');
+      console.log(`[Scheduler] Post ${scheduledPost.id} marked as failed`);
+    }
+
+    return results;
+  } catch (error) {
+    console.error(`[Scheduler] Error processing post ${scheduledPost.id}:`, error);
+    await database.updateScheduledPostStatus(scheduledPost.id, 'failed');
+    throw error;
+  }
+}
+
+// Run the scheduler to check for due posts
+async function runScheduler() {
+  try {
+    const pendingPosts = await database.getPendingScheduledPosts();
+    
+    if (pendingPosts.length > 0) {
+      console.log(`[Scheduler] Found ${pendingPosts.length} posts to process`);
+      
+      for (const post of pendingPosts) {
+        try {
+          await processScheduledPost(post);
+        } catch (err) {
+          console.error(`[Scheduler] Failed to process post ${post.id}:`, err.message);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('[Scheduler] Error running scheduler:', error);
+  }
+}
+
+// Start the scheduler - runs every minute
+const SCHEDULER_INTERVAL = 60 * 1000; // 1 minute
+setInterval(runScheduler, SCHEDULER_INTERVAL);
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Visit http://localhost:${PORT} to access the application`);
+  console.log('[Scheduler] Post scheduler started - checking every minute for due posts');
+  
+  // Run scheduler immediately on startup
+  runScheduler();
 });

@@ -548,6 +548,50 @@ class DatabaseService {
     }
   }
 
+  // Get all pending scheduled posts that are due (scheduled_time <= now)
+  async getPendingScheduledPosts() {
+    try {
+      const now = new Date().toISOString();
+      const { data, error } = await this.supabase
+        .from('scheduled_posts')
+        .select(`
+          *,
+          users!inner (
+            id,
+            google_id,
+            email,
+            name
+          )
+        `)
+        .eq('status', 'pending')
+        .lte('scheduled_time', now)
+        .order('scheduled_time', { ascending: true });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching pending scheduled posts:', error);
+      throw error;
+    }
+  }
+
+  // Get scheduled post by ID with user info
+  async getScheduledPostById(postId) {
+    try {
+      const { data, error } = await this.supabase
+        .from('scheduled_posts')
+        .select('*')
+        .eq('id', postId)
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error fetching scheduled post by ID:', error);
+      throw error;
+    }
+  }
+
   // Post Generations tracking
   async trackPostGeneration(userId, generationType = 'ai') {
     try {
