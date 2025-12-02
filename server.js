@@ -296,7 +296,7 @@ app.get('/auth/facebook/callback',
 
 // Instagram OAuth (Secondary Authorization)
 app.get('/auth/instagram', (req, res) => {
-  if (!req.isAuthenticated()) return res.redirect('/?error=not_authenticated');
+  if (!req.isAuthenticated()) return res.redirect(`${process.env.FRONTEND_URL}/?error=not_authenticated`);
   
   // Use Instagram Basic Display API
   const authUrl = `https://api.instagram.com/oauth/authorize?client_id=${process.env.INSTAGRAM_CLIENT_ID}&redirect_uri=${encodeURIComponent(process.env.INSTAGRAM_CALLBACK_URL)}&scope=user_profile,user_media&response_type=code`;
@@ -305,7 +305,7 @@ app.get('/auth/instagram', (req, res) => {
 
 app.get('/auth/instagram/callback', async (req, res) => {
   try {
-    if (!req.isAuthenticated()) return res.redirect('/?error=not_authenticated');
+    if (!req.isAuthenticated()) return res.redirect(`${process.env.FRONTEND_URL}/?error=not_authenticated`);
     
     const code = req.query.code;
     if (!code) return res.redirect(`${process.env.FRONTEND_URL}/connect?error=instagram_auth_failed`);
