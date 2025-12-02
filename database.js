@@ -86,9 +86,15 @@ class DatabaseService {
     }
   }
 
-  // Twitter account linking
+  // Twitter account linking (supports both OAuth 1.0a and OAuth 2.0)
   async linkTwitterAccount(userId, twitterProfile, tokens) {
     try {
+      // Handle both OAuth 1.0a (token/tokenSecret) and OAuth 2.0 (accessToken/refreshToken) formats
+      const accessToken = tokens.accessToken || tokens.token;
+      const refreshToken = tokens.refreshToken || null;
+      const accessTokenSecret = tokens.accessTokenSecret || tokens.tokenSecret || null;
+      const expiresIn = tokens.expiresIn || null;
+      
       const { data, error } = await this.supabase
         .from('twitter_accounts')
         .upsert({
@@ -96,8 +102,10 @@ class DatabaseService {
           twitter_id: twitterProfile.id,
           username: twitterProfile.username,
           display_name: twitterProfile.displayName,
-          access_token: tokens.token,
-          access_token_secret: tokens.tokenSecret,
+          access_token: accessToken,
+          access_token_secret: accessTokenSecret,
+          refresh_token: refreshToken,
+          expires_at: expiresIn ? new Date(Date.now() + expiresIn * 1000).toISOString() : null,
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'user_id'

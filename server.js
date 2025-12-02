@@ -1041,15 +1041,46 @@ app.post('/api/post-generated', async (req, res) => {
         return res.status(400).json({ error: 'Twitter account not linked' });
       }
 
-      const client = new TwitterApi({
-        appKey: process.env.TWITTER_API_KEY,
-        appSecret: process.env.TWITTER_API_SECRET,
-        accessToken: twitterAccount.access_token,
-        accessSecret: twitterAccount.access_token_secret,
-      });
+      // Create Twitter client - check if we have OAuth 2.0 or 1.0a tokens
+      let client;
+      if (twitterAccount.refresh_token || !twitterAccount.access_token_secret) {
+        // OAuth 2.0 - use bearer token
+        client = new TwitterApi(twitterAccount.access_token);
+      } else {
+        // OAuth 1.0a - use app credentials + user tokens
+        client = new TwitterApi({
+          appKey: process.env.TWITTER_API_KEY,
+          appSecret: process.env.TWITTER_API_SECRET,
+          accessToken: twitterAccount.access_token,
+          accessSecret: twitterAccount.access_token_secret,
+        });
+      }
 
-      // Upload media
-      const mediaId = await client.v1.uploadMedia(imageBuffer, { mimeType: 'image/png' });
+      // Upload media using v1 API (requires OAuth 1.0a or app-only auth)
+      // For OAuth 2.0 user context, we need to use media upload differently
+      let mediaId;
+      try {
+        mediaId = await client.v1.uploadMedia(imageBuffer, { mimeType: 'image/png' });
+      } catch (uploadError) {
+        console.error('Media upload failed:', uploadError.message);
+        // Try posting without media if upload fails
+        const tweet = await client.v2.tweet({
+          text: caption.substring(0, 280)
+        });
+        
+        await database.saveTweet(req.user.id, {
+          ...tweet.data,
+          s3_url: s3_url || null
+        });
+
+        return res.json({
+          success: true,
+          platform: 'twitter',
+          tweet: tweet.data,
+          s3_url: s3_url,
+          note: 'Posted without image due to media upload limitations'
+        });
+      }
 
       // Post tweet
       const tweet = await client.v2.tweet({
@@ -1709,18 +1740,30 @@ async function processScheduledPost(scheduledPost) {
             continue;
           }
 
-          const client = new TwitterApi({
-            appKey: process.env.TWITTER_API_KEY,
-            appSecret: process.env.TWITTER_API_SECRET,
-            accessToken: twitterAccount.access_token,
-            accessSecret: twitterAccount.access_token_secret,
-          });
+          // Create Twitter client - check if we have OAuth 2.0 or 1.0a tokens
+          let client;
+          if (twitterAccount.refresh_token || !twitterAccount.access_token_secret) {
+            // OAuth 2.0 - use bearer token
+            client = new TwitterApi(twitterAccount.access_token);
+          } else {
+            // OAuth 1.0a - use app credentials + user tokens
+            client = new TwitterApi({
+              appKey: process.env.TWITTER_API_KEY,
+              appSecret: process.env.TWITTER_API_SECRET,
+              accessToken: twitterAccount.access_token,
+              accessSecret: twitterAccount.access_token_secret,
+            });
+          }
 
           let tweetOptions = { text: scheduledPost.caption.substring(0, 280) };
 
           if (imageBuffer) {
-            const mediaId = await client.v1.uploadMedia(imageBuffer, { mimeType: 'image/png' });
-            tweetOptions.media = { media_ids: [mediaId] };
+            try {
+              const mediaId = await client.v1.uploadMedia(imageBuffer, { mimeType: 'image/png' });
+              tweetOptions.media = { media_ids: [mediaId] };
+            } catch (uploadError) {
+              console.log('[Scheduler] Media upload failed, posting without image:', uploadError.message);
+            }
           }
 
           const tweet = await client.v2.tweet(tweetOptions);
