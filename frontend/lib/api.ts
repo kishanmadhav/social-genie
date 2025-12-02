@@ -1,6 +1,23 @@
 // API client for communicating with the backend server
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
+// Use runtime detection for API URL
+const getApiUrl = () => {
+  // Check for environment variable first
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL
+  }
+  // In browser, check if we're on production domain
+  if (typeof window !== 'undefined') {
+    if (window.location.hostname === 'social.agenticgenie.click') {
+      return 'https://social-genie-backend.azurewebsites.net'
+    }
+  }
+  // Default to localhost for development
+  return 'http://localhost:3000'
+}
+
+const API_URL = getApiUrl()
+
 
 export interface User {
   id: string
