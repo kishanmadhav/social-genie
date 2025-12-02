@@ -35,7 +35,8 @@ const platformInfo = [
 
 export default function LandingPage() {
   const handleLogin = () => {
-    window.location.href = 'http://localhost:3000/auth/google'
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
+    window.location.href = `${apiUrl}/auth/google`
   }
 
   return (

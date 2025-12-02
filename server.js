@@ -75,8 +75,14 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // CORS configuration - Allow both backend and frontend origins
+const allowedOrigins = [
+  'http://localhost:3000', 
+  'http://localhost:3001',
+  process.env.FRONTEND_URL
+].filter(Boolean);
+
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:3001'],
+  origin: allowedOrigins,
   credentials: true
 }));
 
@@ -251,15 +257,15 @@ app.get('/auth/google', passport.authenticate('google', {
 }));
 
 app.get('/auth/google/callback',
-  passport.authenticate('google', { failureRedirect: 'http://localhost:3001/?error=auth_failed' }),
+  passport.authenticate('google', { failureRedirect: `${process.env.FRONTEND_URL}/?error=auth_failed` }),
   async (req, res) => {
     // Check if user has completed onboarding (has brand profile)
     const brandProfile = await database.getBrandProfile(req.user.id);
     
     if (brandProfile) {
-      res.redirect('http://localhost:3001/dashboard');
+      res.redirect(`${process.env.FRONTEND_URL}/dashboard`);
     } else {
-      res.redirect('http://localhost:3001/onboarding');
+      res.redirect(`${process.env.FRONTEND_URL}/onboarding`);
     }
   }
 );
@@ -268,9 +274,9 @@ app.get('/auth/google/callback',
 app.get('/auth/twitter', passport.authenticate('twitter-link'));
 
 app.get('/auth/twitter/callback',
-  passport.authenticate('twitter-link', { failureRedirect: 'http://localhost:3001/connect?error=twitter_auth_failed' }),
+  passport.authenticate('twitter-link', { failureRedirect: `${process.env.FRONTEND_URL}/connect?error=twitter_auth_failed` }),
   (req, res) => {
-    res.redirect('http://localhost:3001/connect?twitter_linked=true');
+    res.redirect(`${process.env.FRONTEND_URL}/connect?twitter_linked=true`);
   }
 );
 
@@ -282,9 +288,9 @@ app.get('/auth/facebook',
 );
 
 app.get('/auth/facebook/callback',
-  passport.authenticate('facebook-link', { failureRedirect: 'http://localhost:3001/connect?error=facebook_auth_failed' }),
+  passport.authenticate('facebook-link', { failureRedirect: `${process.env.FRONTEND_URL}/connect?error=facebook_auth_failed` }),
   (req, res) => {
-    res.redirect('http://localhost:3001/connect?facebook_linked=true');
+    res.redirect(`${process.env.FRONTEND_URL}/connect?facebook_linked=true`);
   }
 );
 
@@ -302,7 +308,7 @@ app.get('/auth/instagram/callback', async (req, res) => {
     if (!req.isAuthenticated()) return res.redirect('/?error=not_authenticated');
     
     const code = req.query.code;
-    if (!code) return res.redirect('/link-accounts?error=instagram_auth_failed');
+    if (!code) return res.redirect(`${process.env.FRONTEND_URL}/connect?error=instagram_auth_failed`);
 
     // Exchange code for access token
     const tokenResponse = await fetch('https://api.instagram.com/oauth/access_token', {
@@ -321,7 +327,7 @@ app.get('/auth/instagram/callback', async (req, res) => {
     
     if (!tokenResponse.ok || !tokenData.access_token) {
       console.error('Instagram token exchange failed:', tokenData);
-      return res.redirect('/link-accounts?error=instagram_token_failed');
+      return res.redirect(`${process.env.FRONTEND_URL}/connect?error=instagram_token_failed`);
     }
 
     // Get user profile
@@ -330,16 +336,16 @@ app.get('/auth/instagram/callback', async (req, res) => {
 
     if (!profileResponse.ok) {
       console.error('Instagram profile fetch failed:', profile);
-      return res.redirect('/link-accounts?error=instagram_profile_failed');
+      return res.redirect(`${process.env.FRONTEND_URL}/connect?error=instagram_profile_failed`);
     }
 
     // Save to database
     await database.linkInstagramAccount(req.user.id, profile, { access_token: tokenData.access_token });
 
-    res.redirect('/link-accounts?instagram_linked=true');
+    res.redirect(`${process.env.FRONTEND_URL}/connect?instagram_linked=true`);
   } catch (error) {
     console.error('Instagram OAuth callback error:', error);
-    res.redirect('/link-accounts?error=instagram_auth_failed');
+    res.redirect(`${process.env.FRONTEND_URL}/connect?error=instagram_auth_failed`);
   }
 });
 
@@ -347,14 +353,14 @@ app.get('/logout', (req, res) => {
   req.logout((err) => {
     if (err) {
       console.error('Logout error:', err);
-      return res.redirect('/?error=logout_failed');
+      return res.redirect(`${process.env.FRONTEND_URL}/?error=logout_failed`);
     }
     req.session.destroy((err) => {
       if (err) {
         console.error('Session destroy error:', err);
       }
       res.clearCookie('connect.sid');
-      res.redirect('/');
+      res.redirect(process.env.FRONTEND_URL);
     });
   });
 });

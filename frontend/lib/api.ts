@@ -1,7 +1,6 @@
-// API client for communicating with the Next.js API routes
-// Now that backend is integrated into Next.js, we use relative paths
+// API client for communicating with the backend server
 
-const API_URL = '' // Empty string for relative paths to Next.js API routes
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
 
 export interface User {
   id: string
@@ -73,25 +72,22 @@ export const authAPI = {
     }
   },
 
-  // Logout - Use NextAuth signOut
+  // Logout
   async logout(): Promise<void> {
-    // NextAuth will handle this
-    window.location.href = '/api/auth/signout'
+    await fetchWithCredentials(`${API_URL}/auth/logout`, { method: 'POST' })
   },
 }
 
 // Social Media Connection APIs
 export const socialAPI = {
-  // Connect to Twitter - Use NextAuth signIn
+  // Connect to Twitter
   connectTwitter() {
-    // For linking additional accounts, we'll need a custom flow
-    // For now, redirect to NextAuth Twitter provider
-    window.location.href = `/api/auth/signin/twitter`
+    window.location.href = `${API_URL}/auth/twitter`
   },
 
   // Connect to Facebook (for Instagram)
   connectFacebook() {
-    window.location.href = `/api/auth/signin/facebook`
+    window.location.href = `${API_URL}/auth/facebook`
   },
 
   // Unlink Twitter account
