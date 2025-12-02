@@ -138,29 +138,18 @@ passport.use(new GoogleStrategy({
   }
 }));
 
-// Passport Twitter Strategy (Secondary Authorization)
-passport.use('twitter-link', new TwitterStrategy({
-  consumerKey: process.env.TWITTER_API_KEY,
-  consumerSecret: process.env.TWITTER_API_SECRET,
-  callbackURL: process.env.TWITTER_CALLBACK_URL || "http://localhost:3000/auth/twitter/callback",
-  passReqToCallback: true
-}, async (req, token, tokenSecret, profile, done) => {
-  try {
-    // Get current user from session (must be logged in with Google)
-    const currentUser = req.user;
-    if (!currentUser) {
-      return done(new Error('No authenticated user found'), null);
-    }
+// Twitter OAuth 2.0 with PKCE - Store state and code verifier in session
+function generateCodeVerifier() {
+  return crypto.randomBytes(32).toString('base64url');
+}
 
-    // Link Twitter account to current user
-    await database.linkTwitterAccount(currentUser.id, profile, { token, tokenSecret });
-    
-    return done(null, { success: true, twitterProfile: profile });
-  } catch (error) {
-    console.error('Twitter OAuth error:', error);
-    return done(error, null);
-  }
-}));
+function generateCodeChallenge(verifier) {
+  return crypto.createHash('sha256').update(verifier).digest('base64url');
+}
+
+function generateState() {
+  return crypto.randomBytes(16).toString('hex');
+}
 
 // Passport Instagram Strategy - DEPRECATED (Instagram Basic Display API no longer supported)
 // Keeping manual token approach and Facebook Graph API instead
@@ -270,15 +259,115 @@ app.get('/auth/google/callback',
   }
 );
 
-// Twitter OAuth (Secondary Authorization)
-app.get('/auth/twitter', passport.authenticate('twitter-link'));
-
-app.get('/auth/twitter/callback',
-  passport.authenticate('twitter-link', { failureRedirect: `${process.env.FRONTEND_URL}/connect?error=twitter_auth_failed` }),
-  (req, res) => {
-    res.redirect(`${process.env.FRONTEND_URL}/connect?twitter_linked=true`);
+// Twitter OAuth 2.0 (Secondary Authorization)
+app.get('/auth/twitter', (req, res) => {
+  if (!req.isAuthenticated()) {
+    return res.redirect(`${process.env.FRONTEND_URL}/?error=not_authenticated`);
   }
-);
+  
+  const codeVerifier = generateCodeVerifier();
+  const codeChallenge = generateCodeChallenge(codeVerifier);
+  const state = generateState();
+  
+  // Store in session
+  req.session.twitterOAuth = {
+    codeVerifier,
+    state
+  };
+  
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: process.env.TWITTER_CLIENT_ID,
+    redirect_uri: process.env.TWITTER_CALLBACK_URL,
+    scope: 'tweet.read tweet.write users.read offline.access',
+    state: state,
+    code_challenge: codeChallenge,
+    code_challenge_method: 'S256'
+  });
+  
+  res.redirect(`https://twitter.com/i/oauth2/authorize?${params.toString()}`);
+});
+
+app.get('/auth/twitter/callback', async (req, res) => {
+  try {
+    if (!req.isAuthenticated()) {
+      return res.redirect(`${process.env.FRONTEND_URL}/?error=not_authenticated`);
+    }
+    
+    const { code, state, error } = req.query;
+    
+    if (error) {
+      console.error('Twitter OAuth error:', error);
+      return res.redirect(`${process.env.FRONTEND_URL}/connect?error=twitter_auth_failed`);
+    }
+    
+    // Verify state
+    if (!req.session.twitterOAuth || state !== req.session.twitterOAuth.state) {
+      console.error('Twitter OAuth state mismatch');
+      return res.redirect(`${process.env.FRONTEND_URL}/connect?error=twitter_auth_failed`);
+    }
+    
+    const { codeVerifier } = req.session.twitterOAuth;
+    delete req.session.twitterOAuth;
+    
+    // Exchange code for tokens
+    const basicAuth = Buffer.from(`${process.env.TWITTER_CLIENT_ID}:${process.env.TWITTER_CLIENT_SECRET}`).toString('base64');
+    
+    const tokenResponse = await fetch('https://api.twitter.com/2/oauth2/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': `Basic ${basicAuth}`
+      },
+      body: new URLSearchParams({
+        code: code,
+        grant_type: 'authorization_code',
+        redirect_uri: process.env.TWITTER_CALLBACK_URL,
+        code_verifier: codeVerifier
+      })
+    });
+    
+    const tokenData = await tokenResponse.json();
+    
+    if (!tokenResponse.ok || !tokenData.access_token) {
+      console.error('Twitter token exchange failed:', tokenData);
+      return res.redirect(`${process.env.FRONTEND_URL}/connect?error=twitter_token_failed`);
+    }
+    
+    // Get user profile
+    const userResponse = await fetch('https://api.twitter.com/2/users/me?user.fields=profile_image_url,username', {
+      headers: {
+        'Authorization': `Bearer ${tokenData.access_token}`
+      }
+    });
+    
+    const userData = await userResponse.json();
+    
+    if (!userResponse.ok || !userData.data) {
+      console.error('Twitter user fetch failed:', userData);
+      return res.redirect(`${process.env.FRONTEND_URL}/connect?error=twitter_profile_failed`);
+    }
+    
+    // Link Twitter account to current user
+    const profile = {
+      id: userData.data.id,
+      username: userData.data.username,
+      displayName: userData.data.name,
+      photos: userData.data.profile_image_url ? [{ value: userData.data.profile_image_url }] : []
+    };
+    
+    await database.linkTwitterAccount(req.user.id, profile, {
+      accessToken: tokenData.access_token,
+      refreshToken: tokenData.refresh_token,
+      expiresIn: tokenData.expires_in
+    });
+    
+    res.redirect(`${process.env.FRONTEND_URL}/connect?twitter_linked=true`);
+  } catch (error) {
+    console.error('Twitter OAuth callback error:', error);
+    res.redirect(`${process.env.FRONTEND_URL}/connect?error=twitter_auth_failed`);
+  }
+});
 
 // Facebook OAuth (for Instagram Graph API access)
 app.get('/auth/facebook', 
