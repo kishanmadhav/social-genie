@@ -99,12 +99,12 @@ export const authAPI = {
 export const socialAPI = {
   // Connect to Twitter
   connectTwitter() {
-    window.location.href = `${API_URL}/auth/twitter`
+    window.location.href = `${getApiUrl()}/auth/twitter`
   },
 
   // Connect to Facebook (for Instagram)
   connectFacebook() {
-    window.location.href = `${API_URL}/auth/facebook`
+    window.location.href = `${getApiUrl()}/auth/facebook`
   },
 
   // Unlink Twitter account
