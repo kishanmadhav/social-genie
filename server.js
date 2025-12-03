@@ -1837,10 +1837,16 @@ async function processScheduledPost(scheduledPost) {
       }
     }
 
-    // Update post status
-    if (results.success.length > 0) {
+    // Update post status based on results
+    // A post is 'posted' if at least one platform succeeded
+    // A post is 'partial' if some succeeded and some failed
+    // A post is 'failed' if all platforms failed
+    if (results.success.length > 0 && results.failed.length === 0) {
       await database.updateScheduledPostStatus(scheduledPost.id, 'posted');
-      console.log(`[Scheduler] Post ${scheduledPost.id} marked as posted`);
+      console.log(`[Scheduler] Post ${scheduledPost.id} marked as posted (all platforms succeeded)`);
+    } else if (results.success.length > 0 && results.failed.length > 0) {
+      await database.updateScheduledPostStatus(scheduledPost.id, 'partial');
+      console.log(`[Scheduler] Post ${scheduledPost.id} marked as partial (${results.success.length} succeeded, ${results.failed.length} failed)`);
     } else {
       await database.updateScheduledPostStatus(scheduledPost.id, 'failed');
       console.log(`[Scheduler] Post ${scheduledPost.id} marked as failed`);
@@ -1854,9 +1860,37 @@ async function processScheduledPost(scheduledPost) {
   }
 }
 
+// Reset stuck posts that have been 'processing' for more than 5 minutes
+async function resetStuckPosts() {
+  try {
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    
+    const { data, error } = await database.supabase
+      .from('scheduled_posts')
+      .update({ status: 'pending', updated_at: new Date().toISOString() })
+      .eq('status', 'processing')
+      .lt('updated_at', fiveMinutesAgo)
+      .select();
+    
+    if (error) {
+      console.error('[Scheduler] Error resetting stuck posts:', error);
+      return;
+    }
+    
+    if (data && data.length > 0) {
+      console.log(`[Scheduler] Reset ${data.length} stuck posts back to pending`);
+    }
+  } catch (error) {
+    console.error('[Scheduler] Error in resetStuckPosts:', error);
+  }
+}
+
 // Run the scheduler to check for due posts
 async function runScheduler() {
   try {
+    // First, reset any stuck posts
+    await resetStuckPosts();
+    
     const pendingPosts = await database.getPendingScheduledPosts();
     
     if (pendingPosts.length > 0) {

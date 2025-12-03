@@ -501,7 +501,7 @@ class DatabaseService {
 
   async getScheduledPosts(userId, startDate, endDate) {
     try {
-      let query = supabase
+      let query = this.supabase
         .from('scheduled_posts')
         .select('*')
         .eq('user_id', userId)
@@ -526,9 +526,19 @@ class DatabaseService {
 
   async updateScheduledPostStatus(postId, status) {
     try {
+      const updateData = { 
+        status: status, 
+        updated_at: new Date().toISOString()
+      };
+      
+      // Add posted_at timestamp when status is 'posted' or 'partial'
+      if (status === 'posted' || status === 'partial') {
+        updateData.posted_at = new Date().toISOString();
+      }
+      
       const { data, error } = await this.supabase
         .from('scheduled_posts')
-        .update({ status: status, posted_at: status === 'posted' ? new Date().toISOString() : null })
+        .update(updateData)
         .eq('id', postId)
         .select()
         .single();
@@ -557,10 +567,13 @@ class DatabaseService {
   }
 
   // Get all pending scheduled posts that are due (scheduled_time <= now)
+  // Uses 'pending' status to find posts ready to process
   async getPendingScheduledPosts() {
     try {
       const now = new Date().toISOString();
-      const { data, error } = await this.supabase
+      
+      // First, mark posts as 'processing' to prevent duplicate processing
+      const { data: pendingData, error: fetchError } = await this.supabase
         .from('scheduled_posts')
         .select(`
           *,
@@ -573,10 +586,28 @@ class DatabaseService {
         `)
         .eq('status', 'pending')
         .lte('scheduled_time', now)
-        .order('scheduled_time', { ascending: true });
+        .order('scheduled_time', { ascending: true })
+        .limit(10); // Process max 10 at a time to avoid overload
 
-      if (error) throw error;
-      return data || [];
+      if (fetchError) throw fetchError;
+      
+      if (!pendingData || pendingData.length === 0) {
+        return [];
+      }
+      
+      // Mark these posts as 'processing' to prevent duplicate processing
+      const postIds = pendingData.map(p => p.id);
+      const { error: updateError } = await this.supabase
+        .from('scheduled_posts')
+        .update({ status: 'processing' })
+        .in('id', postIds);
+      
+      if (updateError) {
+        console.error('Error marking posts as processing:', updateError);
+        // Continue anyway - better to risk duplicate than skip
+      }
+      
+      return pendingData || [];
     } catch (error) {
       console.error('Error fetching pending scheduled posts:', error);
       throw error;
