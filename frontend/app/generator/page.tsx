@@ -79,8 +79,8 @@ export default function Generator() {
       setGeneratedContent({
         prompt: prompt,
         caption: result.caption,
-        imageUrl: result.imageUrl,
-        s3Url: result.s3Url
+        imageUrl: result.image_url,
+        s3Url: result.s3_url
       })
       
       setToast({ message: 'Content generated successfully!', type: 'success' })
@@ -107,8 +107,7 @@ export default function Generator() {
       await postingAPI.postGenerated({
         platform: selectedPlatform,
         caption: generatedContent.caption,
-        imageUrl: generatedContent.imageUrl,
-        s3Url: generatedContent.s3Url
+        s3_url: generatedContent.s3Url
       })
       
       setToast({ message: `Posted successfully to ${selectedPlatformData.name}!`, type: 'success' })
