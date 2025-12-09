@@ -282,8 +282,10 @@ app.get('/auth/google', passport.authenticate('google', {
 app.get('/auth/google/callback',
   passport.authenticate('google', { failureRedirect: `${process.env.FRONTEND_URL}/?error=auth_failed` }),
   async (req, res) => {
-    // Always redirect to onboarding - let the frontend decide where to go based on profile completion
-    res.redirect(`${process.env.FRONTEND_URL}/onboarding`);
+    // Store session ID to pass to frontend
+    const sessionId = req.sessionID;
+    // Redirect to onboarding with session token
+    res.redirect(`${process.env.FRONTEND_URL}/onboarding?token=${sessionId}`);
   }
 );
 
@@ -396,6 +398,40 @@ app.post('/auth/logout', (req, res) => {
     if (err) {
       console.error('Logout error:', err);
       return res.status(500).json({ error: 'Logout failed' });
+    }
+    req.session.destroy((err) => {
+      if (err) {
+        console.error('Session destroy error:', err);
+      }
+      res.clearCookie('connect.sid');
+      res.json({ success: true });
+    });
+  });
+});
+
+// Session exchange endpoint - validate token and create new session
+app.post('/auth/exchange-token', (req, res) => {
+  const { token } = req.body;
+  
+  if (!token || !req.sessionStore) {
+    return res.status(400).json({ error: 'Invalid token' });
+  }
+
+  // Get session from store using token
+  req.sessionStore.get(token, (err, session) => {
+    if (err || !session || !session.passport || !session.passport.user) {
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+
+    // Create new session with the user data
+    req.login(session.passport.user, (loginErr) => {
+      if (loginErr) {
+        return res.status(500).json({ error: 'Failed to create session' });
+      }
+      res.json({ success: true, user: req.user });
+    });
+  });
+});
     }
     req.session.destroy((err) => {
       if (err) {
