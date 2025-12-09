@@ -120,7 +120,11 @@ app.use(passport.session());
 
 // Health check endpoint for Docker (must be before auth middleware)
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.status(200).json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    frontendUrl: process.env.FRONTEND_URL || 'NOT_SET'
+  });
 });
 
 // Configure multer for file uploads
