@@ -17,6 +17,7 @@ const fetch = require('node-fetch');
 const { Readable } = require('stream');
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -274,10 +275,17 @@ app.get('/auth/google/callback',
   passport.authenticate('google', { failureRedirect: `${process.env.FRONTEND_URL}/?error=auth_failed` }),
   async (req, res) => {
     console.log('[Auth] Google callback - User ID:', req.user?.id);
-    console.log('[Auth] Redirecting to:', `${process.env.FRONTEND_URL}/onboarding`);
     
-    // Always redirect to onboarding
-    res.redirect(`${process.env.FRONTEND_URL}/onboarding`);
+    // Generate JWT token for cross-domain authentication
+    const token = jwt.sign(
+      { userId: req.user.id, email: req.user.email },
+      process.env.SESSION_SECRET || 'fallback-secret',
+      { expiresIn: '5m' } // Short-lived token for initial exchange
+    );
+    
+    // Redirect to onboarding with token
+    console.log('[Auth] Redirecting with token to:', `${process.env.FRONTEND_URL}/onboarding`);
+    res.redirect(`${process.env.FRONTEND_URL}/onboarding?token=${token}`);
   }
 );
 
@@ -399,6 +407,45 @@ app.post('/auth/logout', (req, res) => {
       res.json({ success: true });
     });
   });
+});
+
+// Token exchange endpoint - convert JWT to session
+app.post('/api/auth/exchange-token', async (req, res) => {
+  try {
+    const { token } = req.body;
+    
+    if (!token) {
+      return res.status(400).json({ error: 'Token required' });
+    }
+    
+    // Verify JWT token
+    const decoded = jwt.verify(token, process.env.SESSION_SECRET || 'fallback-secret');
+    
+    // Fetch user from database
+    const { data: user, error } = await database.supabase
+      .from('users')
+      .select('*')
+      .eq('id', decoded.userId)
+      .single();
+    
+    if (error || !user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    // Create session
+    req.login(user, (err) => {
+      if (err) {
+        console.error('[Auth] Session creation error:', err);
+        return res.status(500).json({ error: 'Failed to create session' });
+      }
+      
+      console.log('[Auth] Token exchanged, session created for user:', user.id);
+      res.json({ success: true, user });
+    });
+  } catch (error) {
+    console.error('[Auth] Token exchange error:', error.message);
+    res.status(401).json({ error: 'Invalid or expired token' });
+  }
 });
 
 // Protected route to check authentication

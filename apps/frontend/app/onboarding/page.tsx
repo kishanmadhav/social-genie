@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
 import { brandAPI } from '@/lib/api'
 import {
@@ -12,8 +12,10 @@ import {
 
 export default function Onboarding() {
   const router = useRouter()
-  const { user, loading } = useAuth()
+  const searchParams = useSearchParams()
+  const { user, loading, refreshUser } = useAuth()
   const [saving, setSaving] = useState(false)
+  const [exchangingToken, setExchangingToken] = useState(false)
   const [formData, setFormData] = useState({
     organizationName: '',
     shortDescription: '',
@@ -26,11 +28,45 @@ export default function Onboarding() {
   const [focusedField, setFocusedField] = useState<string | null>(null)
   const [completedFields, setCompletedFields] = useState<Set<string>>(new Set())
 
+  // Exchange token from URL for session
   useEffect(() => {
-    if (!loading && !user) {
+    const token = searchParams.get('token')
+    if (token && !exchangingToken && !user) {
+      setExchangingToken(true)
+      
+      // Exchange token for session
+      fetch('https://social-genie-backend.azurewebsites.net/api/auth/exchange-token', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token })
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            console.log('[Auth] Token exchanged successfully')
+            // Remove token from URL
+            window.history.replaceState({}, '', '/onboarding')
+            // Refresh user data
+            refreshUser()
+          } else {
+            console.error('[Auth] Token exchange failed:', data.error)
+            router.push('/?error=auth_failed')
+          }
+        })
+        .catch(err => {
+          console.error('[Auth] Token exchange error:', err)
+          router.push('/?error=auth_failed')
+        })
+        .finally(() => setExchangingToken(false))
+    }
+  }, [searchParams, exchangingToken, user, refreshUser, router])
+
+  useEffect(() => {
+    if (!loading && !user && !exchangingToken && !searchParams.get('token')) {
       router.push('/')
     }
-  }, [user, loading, router])
+  }, [user, loading, router, exchangingToken, searchParams])
 
   // Load existing brand profile if available
   useEffect(() => {
