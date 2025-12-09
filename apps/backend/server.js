@@ -280,14 +280,11 @@ app.get('/auth/google', passport.authenticate('google', {
 app.get('/auth/google/callback',
   passport.authenticate('google', { failureRedirect: `${process.env.FRONTEND_URL}/?error=auth_failed` }),
   async (req, res) => {
-    // Check if user has completed onboarding (has brand profile)
-    const brandProfile = await database.getBrandProfile(req.user.id);
+    console.log('[Auth] Google callback - User ID:', req.user?.id);
+    console.log('[Auth] Redirecting to:', `${process.env.FRONTEND_URL}/onboarding`);
     
-    if (brandProfile) {
-      res.redirect(`${process.env.FRONTEND_URL}/dashboard`);
-    } else {
-      res.redirect(`${process.env.FRONTEND_URL}/onboarding`);
-    }
+    // Always redirect to onboarding
+    res.redirect(`${process.env.FRONTEND_URL}/onboarding`);
   }
 );
 
