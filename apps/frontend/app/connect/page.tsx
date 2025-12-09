@@ -55,7 +55,7 @@ export default function Connect() {
       username: user?.facebookAccount?.facebook_name || '',
       description: 'Connect your Facebook account to post directly to your pages',
       onConnect: () => {
-        window.location.href = 'https://social-genie-backend.azurewebsites.net/auth/facebook'
+        window.location.href = `${socialAPI.getApiUrl()}/auth/facebook`
       },
       onDisconnect: async () => {
         await socialAPI.unlinkFacebook()
@@ -70,7 +70,7 @@ export default function Connect() {
       username: user?.facebookAccount?.instagram_accounts?.[0]?.instagram_username || '',
       description: 'Connect via Facebook to post to your Instagram Business account',
       onConnect: () => {
-        window.location.href = 'https://social-genie-backend.azurewebsites.net/auth/facebook'
+        window.location.href = `${socialAPI.getApiUrl()}/auth/facebook`
       },
       onDisconnect: async () => {
         await socialAPI.unlinkFacebook()
@@ -85,7 +85,7 @@ export default function Connect() {
       username: user?.twitterAccount?.username || '',
       description: 'Connect your X (Twitter) account to share posts with your followers',
       onConnect: () => {
-        window.location.href = 'https://social-genie-backend.azurewebsites.net/auth/twitter'
+        window.location.href = `${socialAPI.getApiUrl()}/auth/twitter`
       },
       onDisconnect: async () => {
         await socialAPI.unlinkTwitter()

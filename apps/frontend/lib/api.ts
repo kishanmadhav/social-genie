@@ -6,12 +6,6 @@ const getApiUrl = () => {
   if (process.env.NEXT_PUBLIC_API_URL) {
     return process.env.NEXT_PUBLIC_API_URL
   }
-  // In browser, check if we're on production domain
-  if (typeof window !== 'undefined') {
-    if (window.location.hostname === 'social.agenticgenie.click') {
-      return 'https://social-genie-backend.azurewebsites.net'
-    }
-  }
   // Default to localhost for development
   return 'http://localhost:3000'
 }
@@ -97,6 +91,11 @@ export const authAPI = {
 
 // Social Media Connection APIs
 export const socialAPI = {
+  // Get API URL for OAuth redirects
+  getApiUrl() {
+    return getApiUrl()
+  },
+  
   // Connect to Twitter
   connectTwitter() {
     window.location.href = `${getApiUrl()}/auth/twitter`

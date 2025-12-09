@@ -1913,6 +1913,11 @@ async function runScheduler() {
 const SCHEDULER_INTERVAL = 60 * 1000; // 1 minute
 setInterval(runScheduler, SCHEDULER_INTERVAL);
 
+// Health check endpoint for Docker
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Visit http://localhost:${PORT} to access the application`);
