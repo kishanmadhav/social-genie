@@ -1,13 +1,13 @@
 // API client for communicating with the backend server
 
+// HARDCODED for production deployment
+const BACKEND_URL = 'https://social-genie-backend.azurewebsites.net'
+
 // Use runtime detection for API URL
 function getApiUrl() {
-  // In browser, check hostname to determine API URL
+  // Always use production backend for now
   if (typeof window !== 'undefined') {
-    // Production frontend domain
-    if (window.location.hostname === 'social.agenticgenie.click') {
-      return 'https://social-genie-backend.azurewebsites.net'
-    }
+    return BACKEND_URL
   }
   
   // Check for environment variable
@@ -15,8 +15,8 @@ function getApiUrl() {
     return process.env.NEXT_PUBLIC_API_URL
   }
   
-  // Default to localhost for development
-  return 'http://localhost:3000'
+  // Fallback to production backend
+  return BACKEND_URL
 }
 
 
