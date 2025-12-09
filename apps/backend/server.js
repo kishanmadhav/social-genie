@@ -17,7 +17,6 @@ const fetch = require('node-fetch');
 const { Readable } = require('stream');
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const crypto = require('crypto');
-const jwt = require('jsonwebtoken');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -289,22 +288,16 @@ app.get('/auth/google', passport.authenticate('google', {
 app.get('/auth/google/callback',
   passport.authenticate('google', { failureRedirect: `${process.env.FRONTEND_URL}/?error=auth_failed` }),
   async (req, res) => {
-    console.log('[Auth] Google callback - User:', req.user);
+    // Check if user has brand profile
+    const profile = await database.getBrandProfile(req.user.id);
     
-    // Simple approach: Generate a one-time login token
-    const loginToken = jwt.sign(
-      { 
-        userId: req.user.id,
-        email: req.user.email,
-        name: req.user.name,
-        oneTime: true
-      },
-      process.env.SESSION_SECRET || 'fallback-secret',
-      { expiresIn: '2m' }
-    );
-    
-    console.log('[Auth] Redirecting to onboarding with login token');
-    res.redirect(`${process.env.FRONTEND_URL}/onboarding?login=${loginToken}`);
+    if (profile) {
+      // User has completed onboarding, go to dashboard
+      res.redirect(`${process.env.FRONTEND_URL}/dashboard`);
+    } else {
+      // New user, go to onboarding
+      res.redirect(`${process.env.FRONTEND_URL}/onboarding`);
+    }
   }
 );
 
@@ -426,54 +419,6 @@ app.post('/auth/logout', (req, res) => {
       res.json({ success: true });
     });
   });
-});
-
-// Simple login endpoint - exchange one-time token for session
-app.post('/api/auth/login', async (req, res) => {
-  console.log('[Auth] Login request received');
-  
-  try {
-    const { loginToken } = req.body;
-    
-    if (!loginToken) {
-      return res.status(400).json({ error: 'Login token required' });
-    }
-    
-    // Verify one-time token
-    const decoded = jwt.verify(loginToken, process.env.SESSION_SECRET || 'fallback-secret');
-    
-    if (!decoded.oneTime) {
-      return res.status(401).json({ error: 'Invalid token type' });
-    }
-    
-    console.log('[Auth] Login token verified for user:', decoded.userId);
-    
-    // Fetch full user from database
-    const { data: user, error } = await database.supabase
-      .from('users')
-      .select('*')
-      .eq('id', decoded.userId)
-      .single();
-    
-    if (error || !user) {
-      console.log('[Auth] User not found:', error?.message);
-      return res.status(404).json({ error: 'User not found' });
-    }
-    
-    // Create session
-    req.login(user, (err) => {
-      if (err) {
-        console.error('[Auth] Session error:', err);
-        return res.status(500).json({ error: 'Failed to create session' });
-      }
-      
-      console.log('[Auth] Session created for:', user.email);
-      res.json({ success: true, user });
-    });
-  } catch (error) {
-    console.error('[Auth] Login error:', error.message);
-    res.status(401).json({ error: 'Invalid or expired token' });
-  }
 });
 
 // Protected route to check authentication

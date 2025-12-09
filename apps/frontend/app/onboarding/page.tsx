@@ -1,21 +1,19 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
-import { brandAPI, getApiUrl } from '@/lib/api'
+import { brandAPI } from '@/lib/api'
 import {
   BuildingOfficeIcon,
   UserGroupIcon,
   CheckCircleIcon
 } from '@heroicons/react/24/outline'
 
-function OnboardingContent() {
+export default function Onboarding() {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const { user, loading, refreshUser } = useAuth()
+  const { user, loading } = useAuth()
   const [saving, setSaving] = useState(false)
-  const [exchangingToken, setExchangingToken] = useState(false)
   const [formData, setFormData] = useState({
     organizationName: '',
     shortDescription: '',
@@ -28,47 +26,11 @@ function OnboardingContent() {
   const [focusedField, setFocusedField] = useState<string | null>(null)
   const [completedFields, setCompletedFields] = useState<Set<string>>(new Set())
 
-  // Exchange token from URL for session
   useEffect(() => {
-    const loginToken = searchParams.get('login')
-    if (loginToken && !exchangingToken && !user) {
-      setExchangingToken(true)
-      
-      console.log('[Frontend] Auto-login with token...')
-      const apiUrl = getApiUrl()
-      
-      // Simple login with one-time token
-      fetch(`${apiUrl}/api/auth/login`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ loginToken })
-      })
-        .then(res => {
-          console.log('[Frontend] Login response:', res.status)
-          if (!res.ok) throw new Error(`HTTP ${res.status}`)
-          return res.json()
-        })
-        .then(data => {
-          console.log('[Frontend] Login success!')
-          // Remove token from URL
-          window.history.replaceState({}, '', '/onboarding')
-          // Refresh user data
-          refreshUser()
-        })
-        .catch(err => {
-          console.error('[Frontend] Login failed:', err)
-          router.push('/?error=login_failed')
-        })
-        .finally(() => setExchangingToken(false))
-    }
-  }, [searchParams, exchangingToken, user, refreshUser, router])
-
-  useEffect(() => {
-    if (!loading && !user && !exchangingToken && !searchParams.get('login')) {
+    if (!loading && !user) {
       router.push('/')
     }
-  }, [user, loading, router, exchangingToken, searchParams])
+  }, [user, loading, router])
 
   // Load existing brand profile if available
   useEffect(() => {
@@ -464,13 +426,5 @@ function OnboardingContent() {
         </div>
       </div>
     </div>
-  )
-}
-
-export default function Onboarding() {
-  return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
-      <OnboardingContent />
-    </Suspense>
   )
 }
