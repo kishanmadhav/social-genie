@@ -79,11 +79,22 @@ app.use(limiter);
 const allowedOrigins = [
   'http://localhost:3000', 
   'http://localhost:3001',
+  'https://social.agenticgenie.click',
   process.env.FRONTEND_URL
 ].filter(Boolean);
 
 app.use(cors({
-  origin: allowedOrigins,
+  origin: function(origin, callback) {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log('[CORS] Blocked origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 
@@ -411,15 +422,23 @@ app.post('/auth/logout', (req, res) => {
 
 // Token exchange endpoint - convert JWT to session
 app.post('/api/auth/exchange-token', async (req, res) => {
+  console.log('[Auth] Token exchange request received');
+  console.log('[Auth] Origin:', req.headers.origin);
+  console.log('[Auth] Has body:', !!req.body);
+  
   try {
     const { token } = req.body;
     
     if (!token) {
+      console.log('[Auth] No token provided');
       return res.status(400).json({ error: 'Token required' });
     }
     
+    console.log('[Auth] Token received, verifying...');
+    
     // Verify JWT token
     const decoded = jwt.verify(token, process.env.SESSION_SECRET || 'fallback-secret');
+    console.log('[Auth] Token verified, user ID:', decoded.userId);
     
     // Fetch user from database
     const { data: user, error } = await database.supabase
@@ -429,8 +448,11 @@ app.post('/api/auth/exchange-token', async (req, res) => {
       .single();
     
     if (error || !user) {
+      console.log('[Auth] User not found in database:', error?.message);
       return res.status(404).json({ error: 'User not found' });
     }
+    
+    console.log('[Auth] User found:', user.email);
     
     // Create session
     req.login(user, (err) => {
@@ -439,11 +461,14 @@ app.post('/api/auth/exchange-token', async (req, res) => {
         return res.status(500).json({ error: 'Failed to create session' });
       }
       
-      console.log('[Auth] Token exchanged, session created for user:', user.id);
+      console.log('[Auth] Token exchanged successfully, session created for user:', user.id);
       res.json({ success: true, user });
     });
   } catch (error) {
     console.error('[Auth] Token exchange error:', error.message);
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: 'Token expired' });
+    }
     res.status(401).json({ error: 'Invalid or expired token' });
   }
 });

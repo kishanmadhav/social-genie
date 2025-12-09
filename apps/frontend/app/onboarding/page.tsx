@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
-import { brandAPI } from '@/lib/api'
+import { brandAPI, getApiUrl } from '@/lib/api'
 import {
   BuildingOfficeIcon,
   UserGroupIcon,
@@ -34,28 +34,34 @@ function OnboardingContent() {
     if (token && !exchangingToken && !user) {
       setExchangingToken(true)
       
+      console.log('[Frontend] Exchanging token for session...')
+      const apiUrl = getApiUrl()
+      
       // Exchange token for session
-      fetch('https://social-genie-backend.azurewebsites.net/api/auth/exchange-token', {
+      fetch(`${apiUrl}/api/auth/exchange-token`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token })
       })
-        .then(res => res.json())
+        .then(res => {
+          console.log('[Frontend] Exchange response status:', res.status)
+          return res.json()
+        })
         .then(data => {
           if (data.success) {
-            console.log('[Auth] Token exchanged successfully')
+            console.log('[Frontend] Token exchanged successfully')
             // Remove token from URL
             window.history.replaceState({}, '', '/onboarding')
             // Refresh user data
             refreshUser()
           } else {
-            console.error('[Auth] Token exchange failed:', data.error)
+            console.error('[Frontend] Token exchange failed:', data.error)
             router.push('/?error=auth_failed')
           }
         })
         .catch(err => {
-          console.error('[Auth] Token exchange error:', err)
+          console.error('[Frontend] Token exchange error:', err)
           router.push('/?error=auth_failed')
         })
         .finally(() => setExchangingToken(false))
