@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  output: 'standalone', // Enable standalone build for Docker
+  output: 'export', // Static export for S3 hosting
   images: {
     unoptimized: true,
     remotePatterns: [
