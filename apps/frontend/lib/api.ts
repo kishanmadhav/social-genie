@@ -1,7 +1,7 @@
-﻿// API client for communicating with the backend server
+// API client for communicating with the backend server
 
 // Use runtime detection for API URL
-const getApiUrl = () => {
+function getApiUrl() {
   // In browser, check hostname to determine API URL
   if (typeof window !== 'undefined') {
     // Production frontend domain
@@ -18,8 +18,6 @@ const getApiUrl = () => {
   // Default to localhost for development
   return 'http://localhost:3000'
 }
-
-const API_URL = getApiUrl()
 
 
 export interface User {
@@ -85,7 +83,7 @@ export const authAPI = {
   // Get current user info
   async getCurrentUser(): Promise<User | null> {
     try {
-      return await fetchWithCredentials(`${API_URL}/api/user`)
+      return await fetchWithCredentials(`${getApiUrl()}/api/user`)
     } catch (error) {
       console.error('Failed to get current user:', error)
       return null
@@ -94,7 +92,7 @@ export const authAPI = {
 
   // Logout
   async logout(): Promise<void> {
-    await fetchWithCredentials(`${API_URL}/auth/logout`, { method: 'POST' })
+    await fetchWithCredentials(`${getApiUrl()}/auth/logout`, { method: 'POST' })
   },
 }
 
@@ -117,12 +115,12 @@ export const socialAPI = {
 
   // Unlink Twitter account
   async unlinkTwitter(): Promise<void> {
-    await fetchWithCredentials(`${API_URL}/api/unlink-twitter`, { method: 'POST' })
+    await fetchWithCredentials(`${getApiUrl()}/api/unlink-twitter`, { method: 'POST' })
   },
 
   // Unlink Facebook account
   async unlinkFacebook(): Promise<void> {
-    await fetchWithCredentials(`${API_URL}/api/unlink-facebook`, { method: 'POST' })
+    await fetchWithCredentials(`${getApiUrl()}/api/unlink-facebook`, { method: 'POST' })
   },
 }
 
@@ -134,7 +132,7 @@ export const generationAPI = {
     platform?: string
     tone?: string
   }): Promise<GeneratedContent> {
-    return await fetchWithCredentials(`${API_URL}/api/generate-content`, {
+    return await fetchWithCredentials(`${getApiUrl()}/api/generate-content`, {
       method: 'POST',
       body: JSON.stringify(params),
     })
@@ -151,7 +149,7 @@ export const postingAPI = {
     s3_url?: string
     postAsStory?: boolean
   }): Promise<{ success: boolean; postId?: string; permalink?: string; error?: string }> {
-    return await fetchWithCredentials(`${API_URL}/api/post-generated`, {
+    return await fetchWithCredentials(`${getApiUrl()}/api/post-generated`, {
       method: 'POST',
       body: JSON.stringify(params),
     })
@@ -169,7 +167,7 @@ export const brandAPI = {
     marketingGoals: string
     plan?: string
   }): Promise<void> {
-    await fetchWithCredentials(`${API_URL}/api/brand-profile`, {
+    await fetchWithCredentials(`${getApiUrl()}/api/brand-profile`, {
       method: 'POST',
       body: JSON.stringify(profile),
     })
@@ -185,7 +183,7 @@ export const brandAPI = {
     plan?: string
   } | null> {
     try {
-      return await fetchWithCredentials(`${API_URL}/api/brand-profile`)
+      return await fetchWithCredentials(`${getApiUrl()}/api/brand-profile`)
     } catch (error) {
       console.error('Failed to get brand profile:', error)
       return null
@@ -198,7 +196,7 @@ export const analyticsAPI = {
   // Get analytics for a specific platform
   async getPlatformAnalytics(platform: 'twitter' | 'instagram' | 'facebook'): Promise<any> {
     try {
-      return await fetchWithCredentials(`${API_URL}/api/analytics/${platform}`)
+      return await fetchWithCredentials(`${getApiUrl()}/api/analytics/${platform}`)
     } catch (error) {
       console.error(`Failed to get ${platform} analytics:`, error)
       return null
@@ -216,7 +214,7 @@ export const scheduledPostsAPI = {
     s3Url: string
     scheduledTime: string
   }): Promise<{ success: boolean; post: any }> {
-    return await fetchWithCredentials(`${API_URL}/api/scheduled-posts`, {
+    return await fetchWithCredentials(`${getApiUrl()}/api/scheduled-posts`, {
       method: 'POST',
       body: JSON.stringify(params),
     })
@@ -228,18 +226,18 @@ export const scheduledPostsAPI = {
     if (startDate) params.append('startDate', startDate)
     if (endDate) params.append('endDate', endDate)
     
-    const url = `${API_URL}/api/scheduled-posts${params.toString() ? '?' + params.toString() : ''}`
+    const url = `${getApiUrl()}/api/scheduled-posts${params.toString() ? '?' + params.toString() : ''}`
     return await fetchWithCredentials(url)
   },
 
   // Get scheduled posts for a specific month
   async getMonthlyScheduledPosts(year: number, month: number): Promise<{ posts: any[] }> {
-    return await fetchWithCredentials(`${API_URL}/api/scheduled-posts/month/${year}/${month}`)
+    return await fetchWithCredentials(`${getApiUrl()}/api/scheduled-posts/month/${year}/${month}`)
   },
 
   // Delete a scheduled post
   async deleteScheduledPost(postId: string): Promise<{ success: boolean }> {
-    return await fetchWithCredentials(`${API_URL}/api/scheduled-posts/${postId}`, {
+    return await fetchWithCredentials(`${getApiUrl()}/api/scheduled-posts/${postId}`, {
       method: 'DELETE',
     })
   },
@@ -254,12 +252,12 @@ export const usageAPI = {
     limit: number
     remaining: number
   }> {
-    return await fetchWithCredentials(`${API_URL}/api/usage`)
+    return await fetchWithCredentials(`${getApiUrl()}/api/usage`)
   },
 
   // Track a generation
   async trackGeneration(generationType: string = 'ai'): Promise<{ success: boolean }> {
-    return await fetchWithCredentials(`${API_URL}/api/track-generation`, {
+    return await fetchWithCredentials(`${getApiUrl()}/api/track-generation`, {
       method: 'POST',
       body: JSON.stringify({ generationType }),
     })
@@ -286,7 +284,7 @@ export const postsAPI = {
     }>
     count: number
   }> {
-    const url = limit ? `${API_URL}/api/posts?limit=${limit}` : `${API_URL}/api/posts`
+    const url = limit ? `${getApiUrl()}/api/posts?limit=${limit}` : `${getApiUrl()}/api/posts`
     return await fetchWithCredentials(url)
   },
 }
