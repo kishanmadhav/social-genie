@@ -2,13 +2,7 @@
 
 // Use runtime detection for API URL
 const getApiUrl = () => {
-  // In browser, check hostname to determine backend URL
-  if (typeof window !== 'undefined') {
-    if (window.location.hostname.includes('agenticgenie.click')) {
-      return 'https://social-genie-backend.azurewebsites.net'
-    }
-  }
-  // Check for environment variable
+  // Check for environment variable first
   if (process.env.NEXT_PUBLIC_API_URL) {
     return process.env.NEXT_PUBLIC_API_URL
   }
@@ -18,8 +12,6 @@ const getApiUrl = () => {
 
 const API_URL = getApiUrl()
 
-// Export for use in other components
-export { getApiUrl }
 
 export interface User {
   id: string

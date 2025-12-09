@@ -78,22 +78,11 @@ app.use(limiter);
 const allowedOrigins = [
   'http://localhost:3000', 
   'http://localhost:3001',
-  'https://social.agenticgenie.click',
   process.env.FRONTEND_URL
 ].filter(Boolean);
 
 app.use(cors({
-  origin: function(origin, callback) {
-    // Allow requests with no origin (mobile apps, Postman, etc.)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      console.log('[CORS] Blocked origin:', origin);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: allowedOrigins,
   credentials: true
 }));
 
@@ -119,11 +108,7 @@ app.use(passport.session());
 
 // Health check endpoint for Docker (must be before auth middleware)
 app.get('/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'ok', 
-    timestamp: new Date().toISOString(),
-    frontendUrl: process.env.FRONTEND_URL || 'NOT_SET'
-  });
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 // Configure multer for file uploads
@@ -277,7 +262,14 @@ passport.deserializeUser((user, done) => {
   done(null, user);
 });
 
-// API Routes
+// Serve static files
+app.use(express.static('public'));
+
+// Routes
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 // Authentication routes
 // Google OAuth (Primary Authentication)
 app.get('/auth/google', passport.authenticate('google', {
@@ -288,14 +280,12 @@ app.get('/auth/google', passport.authenticate('google', {
 app.get('/auth/google/callback',
   passport.authenticate('google', { failureRedirect: `${process.env.FRONTEND_URL}/?error=auth_failed` }),
   async (req, res) => {
-    // Check if user has brand profile
-    const profile = await database.getBrandProfile(req.user.id);
+    // Check if user has completed onboarding (has brand profile)
+    const brandProfile = await database.getBrandProfile(req.user.id);
     
-    if (profile) {
-      // User has completed onboarding, go to dashboard
+    if (brandProfile) {
       res.redirect(`${process.env.FRONTEND_URL}/dashboard`);
     } else {
-      // New user, go to onboarding
       res.redirect(`${process.env.FRONTEND_URL}/onboarding`);
     }
   }
@@ -416,7 +406,7 @@ app.post('/auth/logout', (req, res) => {
         console.error('Session destroy error:', err);
       }
       res.clearCookie('connect.sid');
-      res.json({ success: true });
+      res.json({ success: true, message: 'Logged out successfully' });
     });
   });
 });
@@ -1631,6 +1621,11 @@ app.get('/api/analytics/:platform', async (req, res) => {
   }
 });
 
+// SPA routes
+app.get(['/dashboard', '/link-accounts', '/link-twitter', '/link-instagram'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 // Error handling middleware
 app.use((error, req, res, next) => {
   console.error('Server error:', error);
@@ -1877,9 +1872,9 @@ async function resetStuckPosts() {
     
     const { data, error } = await database.supabase
       .from('scheduled_posts')
-      .update({ status: 'pending' })
+      .update({ status: 'pending', updated_at: new Date().toISOString() })
       .eq('status', 'processing')
-      .lt('scheduled_time', fiveMinutesAgo)
+      .lt('updated_at', fiveMinutesAgo)
       .select();
     
     if (error) {
