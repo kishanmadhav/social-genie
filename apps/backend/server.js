@@ -106,6 +106,11 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Health check endpoint for Docker (must be before auth middleware)
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 // Configure multer for file uploads
 const storage = multer.memoryStorage();
 const upload = multer({
@@ -1912,11 +1917,6 @@ async function runScheduler() {
 // Start the scheduler - runs every minute
 const SCHEDULER_INTERVAL = 60 * 1000; // 1 minute
 setInterval(runScheduler, SCHEDULER_INTERVAL);
-
-// Health check endpoint for Docker
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
-});
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
