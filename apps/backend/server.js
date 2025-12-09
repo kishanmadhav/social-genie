@@ -78,6 +78,7 @@ app.use(limiter);
 const allowedOrigins = [
   'http://localhost:3000', 
   'http://localhost:3001',
+  'https://social.agenticgenie.click',
   process.env.FRONTEND_URL
 ].filter(Boolean);
 
@@ -98,6 +99,7 @@ app.use(session({
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
 }));
@@ -267,7 +269,19 @@ app.use(express.static('public'));
 
 // Routes
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.json({ 
+    message: 'Social Genie API', 
+    version: '1.0.0',
+    status: 'running',
+    endpoints: {
+      health: '/health',
+      auth: {
+        google: '/auth/google',
+        twitter: '/auth/twitter',
+        facebook: '/auth/facebook'
+      }
+    }
+  });
 });
 
 // Authentication routes
