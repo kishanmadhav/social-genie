@@ -2,10 +2,19 @@
 
 // Use runtime detection for API URL
 const getApiUrl = () => {
-  // Check for environment variable first
+  // In browser, check hostname to determine API URL
+  if (typeof window !== 'undefined') {
+    // Production frontend domain
+    if (window.location.hostname === 'social.agenticgenie.click') {
+      return 'https://social-genie-backend.azurewebsites.net'
+    }
+  }
+  
+  // Check for environment variable
   if (process.env.NEXT_PUBLIC_API_URL) {
     return process.env.NEXT_PUBLIC_API_URL
   }
+  
   // Default to localhost for development
   return 'http://localhost:3000'
 }
