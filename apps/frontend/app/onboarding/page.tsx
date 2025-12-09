@@ -30,46 +30,42 @@ function OnboardingContent() {
 
   // Exchange token from URL for session
   useEffect(() => {
-    const token = searchParams.get('token')
-    if (token && !exchangingToken && !user) {
+    const loginToken = searchParams.get('login')
+    if (loginToken && !exchangingToken && !user) {
       setExchangingToken(true)
       
-      console.log('[Frontend] Exchanging token for session...')
+      console.log('[Frontend] Auto-login with token...')
       const apiUrl = getApiUrl()
       
-      // Exchange token for session
-      fetch(`${apiUrl}/api/auth/exchange-token`, {
+      // Simple login with one-time token
+      fetch(`${apiUrl}/api/auth/login`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token })
+        body: JSON.stringify({ loginToken })
       })
         .then(res => {
-          console.log('[Frontend] Exchange response status:', res.status)
+          console.log('[Frontend] Login response:', res.status)
+          if (!res.ok) throw new Error(`HTTP ${res.status}`)
           return res.json()
         })
         .then(data => {
-          if (data.success) {
-            console.log('[Frontend] Token exchanged successfully')
-            // Remove token from URL
-            window.history.replaceState({}, '', '/onboarding')
-            // Refresh user data
-            refreshUser()
-          } else {
-            console.error('[Frontend] Token exchange failed:', data.error)
-            router.push('/?error=auth_failed')
-          }
+          console.log('[Frontend] Login success!')
+          // Remove token from URL
+          window.history.replaceState({}, '', '/onboarding')
+          // Refresh user data
+          refreshUser()
         })
         .catch(err => {
-          console.error('[Frontend] Token exchange error:', err)
-          router.push('/?error=auth_failed')
+          console.error('[Frontend] Login failed:', err)
+          router.push('/?error=login_failed')
         })
         .finally(() => setExchangingToken(false))
     }
   }, [searchParams, exchangingToken, user, refreshUser, router])
 
   useEffect(() => {
-    if (!loading && !user && !exchangingToken && !searchParams.get('token')) {
+    if (!loading && !user && !exchangingToken && !searchParams.get('login')) {
       router.push('/')
     }
   }, [user, loading, router, exchangingToken, searchParams])

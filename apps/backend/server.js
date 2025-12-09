@@ -285,18 +285,22 @@ app.get('/auth/google', passport.authenticate('google', {
 app.get('/auth/google/callback',
   passport.authenticate('google', { failureRedirect: `${process.env.FRONTEND_URL}/?error=auth_failed` }),
   async (req, res) => {
-    console.log('[Auth] Google callback - User ID:', req.user?.id);
+    console.log('[Auth] Google callback - User:', req.user);
     
-    // Generate JWT token for cross-domain authentication
-    const token = jwt.sign(
-      { userId: req.user.id, email: req.user.email },
+    // Simple approach: Generate a one-time login token
+    const loginToken = jwt.sign(
+      { 
+        userId: req.user.id,
+        email: req.user.email,
+        name: req.user.name,
+        oneTime: true
+      },
       process.env.SESSION_SECRET || 'fallback-secret',
-      { expiresIn: '5m' } // Short-lived token for initial exchange
+      { expiresIn: '2m' }
     );
     
-    // Redirect to onboarding with token
-    console.log('[Auth] Redirecting with token to:', `${process.env.FRONTEND_URL}/onboarding`);
-    res.redirect(`${process.env.FRONTEND_URL}/onboarding?token=${token}`);
+    console.log('[Auth] Redirecting to onboarding with login token');
+    res.redirect(`${process.env.FRONTEND_URL}/onboarding?login=${loginToken}`);
   }
 );
 
@@ -420,27 +424,27 @@ app.post('/auth/logout', (req, res) => {
   });
 });
 
-// Token exchange endpoint - convert JWT to session
-app.post('/api/auth/exchange-token', async (req, res) => {
-  console.log('[Auth] Token exchange request received');
-  console.log('[Auth] Origin:', req.headers.origin);
-  console.log('[Auth] Has body:', !!req.body);
+// Simple login endpoint - exchange one-time token for session
+app.post('/api/auth/login', async (req, res) => {
+  console.log('[Auth] Login request received');
   
   try {
-    const { token } = req.body;
+    const { loginToken } = req.body;
     
-    if (!token) {
-      console.log('[Auth] No token provided');
-      return res.status(400).json({ error: 'Token required' });
+    if (!loginToken) {
+      return res.status(400).json({ error: 'Login token required' });
     }
     
-    console.log('[Auth] Token received, verifying...');
+    // Verify one-time token
+    const decoded = jwt.verify(loginToken, process.env.SESSION_SECRET || 'fallback-secret');
     
-    // Verify JWT token
-    const decoded = jwt.verify(token, process.env.SESSION_SECRET || 'fallback-secret');
-    console.log('[Auth] Token verified, user ID:', decoded.userId);
+    if (!decoded.oneTime) {
+      return res.status(401).json({ error: 'Invalid token type' });
+    }
     
-    // Fetch user from database
+    console.log('[Auth] Login token verified for user:', decoded.userId);
+    
+    // Fetch full user from database
     const { data: user, error } = await database.supabase
       .from('users')
       .select('*')
@@ -448,27 +452,22 @@ app.post('/api/auth/exchange-token', async (req, res) => {
       .single();
     
     if (error || !user) {
-      console.log('[Auth] User not found in database:', error?.message);
+      console.log('[Auth] User not found:', error?.message);
       return res.status(404).json({ error: 'User not found' });
     }
-    
-    console.log('[Auth] User found:', user.email);
     
     // Create session
     req.login(user, (err) => {
       if (err) {
-        console.error('[Auth] Session creation error:', err);
+        console.error('[Auth] Session error:', err);
         return res.status(500).json({ error: 'Failed to create session' });
       }
       
-      console.log('[Auth] Token exchanged successfully, session created for user:', user.id);
+      console.log('[Auth] Session created for:', user.email);
       res.json({ success: true, user });
     });
   } catch (error) {
-    console.error('[Auth] Token exchange error:', error.message);
-    if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({ error: 'Token expired' });
-    }
+    console.error('[Auth] Login error:', error.message);
     res.status(401).json({ error: 'Invalid or expired token' });
   }
 });
