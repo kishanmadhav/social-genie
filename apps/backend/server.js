@@ -262,14 +262,7 @@ passport.deserializeUser((user, done) => {
   done(null, user);
 });
 
-// Serve static files
-app.use(express.static('public'));
-
-// Routes
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
+// API Routes
 // Authentication routes
 // Google OAuth (Primary Authentication)
 app.get('/auth/google', passport.authenticate('google', {
@@ -1618,11 +1611,6 @@ app.get('/api/analytics/:platform', async (req, res) => {
   }
 });
 
-// SPA routes
-app.get(['/dashboard', '/link-accounts', '/link-twitter', '/link-instagram'], (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
 // Error handling middleware
 app.use((error, req, res, next) => {
   console.error('Server error:', error);
@@ -1869,9 +1857,9 @@ async function resetStuckPosts() {
     
     const { data, error } = await database.supabase
       .from('scheduled_posts')
-      .update({ status: 'pending', updated_at: new Date().toISOString() })
+      .update({ status: 'pending' })
       .eq('status', 'processing')
-      .lt('updated_at', fiveMinutesAgo)
+      .lt('scheduled_time', fiveMinutesAgo)
       .select();
     
     if (error) {
