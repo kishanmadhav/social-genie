@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
 import { brandAPI } from '@/lib/api'
@@ -10,7 +10,7 @@ import {
   CheckCircleIcon
 } from '@heroicons/react/24/outline'
 
-export default function Onboarding() {
+function OnboardingContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user, loading, refreshUser } = useAuth()
@@ -462,5 +462,13 @@ export default function Onboarding() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function Onboarding() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <OnboardingContent />
+    </Suspense>
   )
 }
