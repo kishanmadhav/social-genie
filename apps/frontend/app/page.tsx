@@ -35,7 +35,10 @@ const platformInfo = [
 
 export default function LandingPage() {
   const handleLogin = () => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
+    // Use production backend URL when on production domain
+    const apiUrl = typeof window !== 'undefined' && window.location.hostname.includes('agenticgenie.click')
+      ? 'https://social-genie-backend.azurewebsites.net'
+      : 'http://localhost:3000'
     window.location.href = `${apiUrl}/auth/google`
   }
 
